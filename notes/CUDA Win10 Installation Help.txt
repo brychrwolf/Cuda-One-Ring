@@ -1,0 +1,18 @@
+Hi All, 
+After 2 days of trial & error, including taking advices from this thread, i've managed to install both the CUDA toolkit & visual studio integration. In the absence of a bugfix in the official installer, i consider this as a nearly perfect solution, and can't wait to share it with others here :-)
+
+My environment: Win7 64 bit, Visual Studio 2015 Community update 3, CUDA Toolkit 9.1
+
+Solution:
+1. download the offline CUDA installer
+2. extract the installation files
+3. install CUDA except "visual studio integration"
+4. manually copy the "visual studio integration" files into MSBuild's BuildCustomizations folder
+5. edit your .vcxproj file to point to those customizations
+
+for steps (4 & 5), see this blog post
+https://www.olegtarasov.me/how-to-build-cuda-toolkit-projects-in-visual-studio-2017/
+
+Enjoy!
+#31
+Posted 05/06/2018 02:21 PM   

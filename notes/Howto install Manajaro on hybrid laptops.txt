@@ -1,0 +1,46 @@
+After a weekend of research, stress and pain I finally figure out how to install manjaro 17 and configure the nvidia/bumblebee drivers on my avell laptop
+
+Here's my notebook specs:
+
+$ inxi -MGCNA
+
+Machine:   Device: laptop System: Avell High Performance product: 1513
+           Mobo: N/A model: N/A v: 0.1 UEFI: American Megatrends v: N.1.02 date: 09/28/2016
+Battery    BAT0: charge: 44.0 Wh 100.0% condition: 44.0/44.0 Wh (100%)
+CPU:       Quad core Intel Core i7-6700HQ (-HT-MCP-) cache: 6144 KB 
+           clock speeds: max: 3500 MHz 1: 2598 MHz 2: 2604 MHz 3: 2568 MHz 4: 2581 MHz 5: 2609 MHz 6: 2566 MHz
+           7: 2593 MHz 8: 2601 MHz
+Graphics:  Card-1: Intel HD Graphics 530
+           Card-2: NVIDIA GM107M [GeForce GTX 960M]
+           Display Server: X.Org 1.19.3 driver: intel Resolution: 1920x1080@60.02hz
+           GLX Renderer: Mesa DRI Intel HD Graphics 530 (Skylake GT2) GLX Version: 3.0 Mesa 17.0.5
+Audio:     Card Intel Sunrise Point-H HD Audio driver: snd_hda_intel Sound: ALSA v: k4.9.27-1-MANJARO
+Network:   Card-1: Realtek RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller driver: r8169
+           Card-2: Intel Wireless 7265 driver: iwlwifi
+The first problem occurred when booting the live usb with nonfree drivers, it simply hangs with the message A start job is running for LiveMedia MHWD Script. Possibly the Manjaro Hardware Detection(a.k.a MHWD) couldn't configure the correct drivers for this setup. I tryed some flags like xdriver=vesa, nouveau.modeset=0, and finally nomodeset that brings me a bit closer to the xserver session, but again it hangs now with the message Started TLP system startup/shutdown.
+
+With some research I find the kernel flag systemd.mask=mhwd-live.service that brings me to the manjaro live session (blocks the mhwd from detecting the optimal drivers).
+
+Then I start the installer and proceed with a normal installation but the installer again gets stuck now in 78% Running mhwdcfg, the screen simply freezes. To get arround this problem I restart and use the same flag described above to get into the live session and comment the run method on /lib/calamares/modules/mhwdcfg/main.py at the end of the file and repeat the installation again:
+
+def run():
+    """ Configure the hardware """
+    
+    mhwd = MhwdController()
+    
+    # return mhwd.run()
+    return None # <- Add this and comment the above line
+With this trick I finished the installation, restart and manjaro works fine!
+
+First of all update your system with sudo pacman -Syu and once completed install the linux headers with sudo pacman -S linux49-headers(use your kernel version) then the non-free drivers with sudo mhwd -a pci nonfree 0300 and follow the bumblebee instruction from manjaro website. (https://wiki.manjaro.org/index.php?title=Configure_NVIDIA_(non-free)_settings_and_load_them_on_Startup#Bumblebee_and_Steam)
+
+Reboot the system and add the following kernel flags otherwise the system won't boot:
+
+acpi_osi=! acpi_osi="Windows 2009"
+Once you get into your graphical interface test if bumblebee is running correctly:
+
+systemctl status bumblebeed
+optirun -b none nvidia-settings -c :8
+You should see the nvidia-settings showing your dedicated GPU, for me works like a charm!
+
+Don't forget to add acpi_osi=! acpi_osi=\"Windows 2009\" to your GRUB_CMDLINE_LINUX_DEFAULT on /etc/default/grub and run sudo update-grub
