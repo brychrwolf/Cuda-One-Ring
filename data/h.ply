@@ -1,13 +1,13 @@
 ply
-format ascii 1.0    { ascii/binary, format version number }
+format ascii 1.0 
 comment A debossed H, as a nod to Heidelberg University and the cuniform script studied by the FCGL 
 comment made by Bryan Wolfford
-element vertex 22   { there are 22 "vertex" elements in this file }
+element vertex 22
 property int x
 property int y 
 property int z
-element face 36     { there are 36 "face" elements in this file }
-property list uchar int32 vertex_indices { "vertex_indices" is a list of ints }
+element face 36
+property list uchar int32 vertex_indices
 end_header
  0  0  0
  2  0  0
