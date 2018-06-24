@@ -9,7 +9,7 @@ property int z
 element face 36     { there are 36 "face" elements in this file }
 property list uchar int32 vertex_indices { "vertex_indices" is a list of ints }
 end_header
- 0  0  0            { start of vertex list }
+ 0  0  0
  2  0  0
 12  0  0
 14  0  0
@@ -31,7 +31,7 @@ end_header
 16 -2  0
 16 22  0
 -2 22  0
- 3  0  1  8         { start of face list, all must be in counter-clockwise order, vector indicies start with 0}
+ 3  0  1  8
  3  1 16  8
  3  1 12 16
  3 12 13 16
