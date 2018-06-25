@@ -1,0 +1,18 @@
+File IN:         /Storage/Code/masters-thesis/data/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply
+File OUT/Prefix: /Storage/Code/masters-thesis/data/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_r1.00_n4_v256
+Radius:          1 mm (unit assumed)
+Radii:           2^4 = 16
+Rastersize:      256^3
+Radii:           1.00 0.94 0.88 0.81 0.75 0.69 0.62 0.56 0.50 0.44 0.38 0.31 0.25 0.19 0.12 0.06
+Model ID:        Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614
+Material:        original, clay
+Vertices:        397210
+Faces:           789406
+Bounding Box:    3.40 x 4.80 x 2.00 cm
+Area:            17.41 cm^2
+Volume (dx):     -1.25 cm^3
+Volume (dy):     -1.25 cm^3
+Volume (dz):     23.11 cm^3
+Start date/time is: Mon Jun 25 14:10:09 2018
+End date/time is:   Mon Jun 25 14:19:00 2018
+Parallel processing took 531 seconds.
