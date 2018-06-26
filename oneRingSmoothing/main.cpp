@@ -156,8 +156,8 @@ int main(){
 	
 	std::cout << std::endl << "Calculating all f`_i..." << std::endl;	
 	
-	std::cout << std::endl << "Calculating all weights..." << std::endl;
-	std::array<std::map<int, float>, numVerticies> weights;	
+	std::cout << std::endl << "Calculating weights for all vertex pairs..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> neighbor_weights;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
 		for(int pi : neighbors[p0]){
 			//IDEA: Saving to new file, too slow. Saving to new whole array, too large.
@@ -165,11 +165,24 @@ int main(){
 			//That knowledge comes from 2ring neighbors. Does saving that Info actually save memory? 
 			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster)
 			
-			float weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
-			weights[p0].insert(std::pair<int, float>(pi, weight));
-			std::cout << "weights[" << p0 << "][" << pi << "] " << weights[p0][pi] << std::endl;
+			float neighbor_weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
+			neighbor_weights[p0].insert(std::pair<int, float>(pi, neighbor_weight));
+			std::cout << "neighbor_weights[" << p0 << "][" << pi << "] " << neighbor_weights[p0][pi] << std::endl;
 		}
 	}
+
+	std::cout << std::endl << "Calculating weights for all triangles..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> mean_triangle_weights;	
+	for(int p0 = 0; p0 < numVerticies; p0++){
+		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+			float triangle_weight = (featureVectors[p0] + neighbor_weights[p0][pi] + neighbor_weights[p0][pip1])/3;
+			mean_triangle_weights[p0].insert(std::pair<int, float>(pi, triangle_weight));
+			std::cout << "mean_triangle_weights[" << p0 << "][" << pi << "] " << mean_triangle_weights[p0][pi] << std::endl;
+		
+		}
+	}
+	
 	
 	float featureVectors_updated[numVerticies] = {};
 	
