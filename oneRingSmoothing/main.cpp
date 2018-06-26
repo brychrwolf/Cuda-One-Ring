@@ -19,6 +19,12 @@ typedef struct {
 	int c;
 } face;
 
+float l2norm_diff(vertex* vs, int pi, int p0){
+	return sqrt((vs[pi].x - vs[p0].x)*(vs[pi].x - vs[p0].x)
+			  + (vs[pi].y - vs[p0].y)*(vs[pi].y - vs[p0].y)
+			  + (vs[pi].z - vs[p0].z)*(vs[pi].z - vs[p0].z));
+}
+
 int main(){
 	std::cout << "Loading the \"Debossed H\" Mesh..." << std::endl;
 	
@@ -41,7 +47,7 @@ int main(){
 		std::cout << i << " = {" << verticies[i].x << ", " << verticies[i].y << ", " << verticies[i].z << "}" <<std::endl;
 	}
 	
-	std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
+	/*std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
@@ -49,7 +55,33 @@ int main(){
 	for(int i = 0; i < numVerticies; i++){
 		featureVectors[i] = dis(gen);
 		std::cout << "featureVector [" << i << "] = " << featureVectors[i] << std::endl;
-	}
+	}*/
+	
+	std::cout << std::endl << "Set Feature Vectors..." << std::endl;
+	float featureVectors[numVerticies] = {	
+		-0.373397,
+		 0.645161,
+		 0.797587,
+		-0.520541,
+		-0.114591,
+		 0.788363,
+		-0.936573,
+		-0.699675,
+		-0.139383,
+		 0.152594,
+		-0.976301,
+		 0.288434,
+		-0.212369,
+		 0.722184,
+		 0.154177,
+		 0.510287,
+		 0.725236,
+		 0.992415,
+		 0.582556,
+		 0.2727,
+		-0.6929,
+		 0.40541
+	};
 	
 	std::cout << std::endl << "Loading Faces..." << std::endl;
 	const int numFaces = 36;
@@ -108,19 +140,18 @@ int main(){
 	std::cout << std::endl << "Getting smallest edge length (sel) within the 1-ring around all verticies." << std::endl;
 	float sel[numVerticies];
 	std::fill_n(sel, numVerticies, FLT_MAX); //initialize array to max float value
-	for(int i = 0; i < numVerticies; i++){
+	for(int p0 = 0; p0 < numVerticies; p0++){
 		int sel_v = -1;
-		for(int j : neighbors[i]){
+		for(int pi : neighbors[p0]){
 			//IDEA: These norms are used later, so can save calculations if values are store.
-			float euclidean_norm = sqrt((verticies[j].x - verticies[i].x)*(verticies[j].x - verticies[i].x)
-									  + (verticies[j].y - verticies[i].y)*(verticies[j].y - verticies[i].y)
-									  + (verticies[j].z - verticies[i].z)*(verticies[j].z - verticies[i].z));
-			if(euclidean_norm <= sel[i]){
-				sel[i] = euclidean_norm;
-				sel_v = j;
+			float norm_diff = l2norm_diff(verticies, pi, p0);
+			if(norm_diff <= sel[p0]){
+				sel[p0] = norm_diff;
+				sel_v = pi;
 			}
+			std::cout  << "p0 " << p0  << " pi " << pi << " norm_diff " << norm_diff << std::endl;
 		}
-		std::cout << "sel[" << i << "] " << sel[i] << " sel_v " << sel_v << std::endl;
+		std::cout << "sel[" << p0 << "] " << sel[p0] << " sel_v " << sel_v << std::endl;
 	}
 	
 	std::cout << std::endl << "Calculating all f`_i..." << std::endl;	
@@ -133,10 +164,8 @@ int main(){
 			//Only if I know if a vertex will never be processed again, can I save updated values back into the original memspace.
 			//That knowledge comes from 2ring neighbors. Does saving that Info actually save memory? 
 			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster)
-			float weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0])
-					/ sqrt((verticies[pi].x - verticies[p0].x)*(verticies[pi].x - verticies[p0].x)
-						 + (verticies[pi].y - verticies[p0].y)*(verticies[pi].y - verticies[p0].y)
-						 + (verticies[pi].z - verticies[p0].z)*(verticies[pi].z - verticies[p0].z));
+			
+			float weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
 			weights[p0].insert(std::pair<int, float>(pi, weight));
 			std::cout << "weights[" << p0 << "][" << pi << "] " << weights[p0][pi] << std::endl;
 		}
