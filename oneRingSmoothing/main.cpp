@@ -3,6 +3,9 @@
 #include <cmath>
 #include <cfloat>
 #include <random>
+#include <array>
+#include <vector>
+#include <map>
 
 typedef struct {
 	int x;
@@ -20,7 +23,7 @@ int main(){
 	std::cout << "Loading the \"Debossed H\" Mesh..." << std::endl;
 	
 	std::cout << "Loading Vertexes..." << std::endl;
-	int numVerticies = 22;
+	const int numVerticies = 22;
 	vertex verticies[numVerticies] = {
 		(vertex) { 0,  0,  0},	(vertex) { 2,  0,  0},
 		(vertex) {12,  0,  0},	(vertex) {14,  0,  0},
@@ -49,7 +52,7 @@ int main(){
 	}
 	
 	std::cout << std::endl << "Loading Faces..." << std::endl;
-	int numFaces = 36;
+	const int numFaces = 36;
 	face faces[numFaces] = {
 		(face) { 0,  1,  8}, (face) { 1, 16,  8},
 		(face) { 1, 12, 16}, (face) {12, 13, 16},
@@ -101,19 +104,44 @@ int main(){
 	}
 
 	std::cout << std::endl << "Start Smoothing..." << std::endl;
+	
+	std::cout << std::endl << "Getting smallest edge length (sel) within the 1-ring around all verticies." << std::endl;
+	float sel[numVerticies];
+	std::fill_n(sel, numVerticies, FLT_MAX); //initialize array to max float value
 	for(int i = 0; i < numVerticies; i++){
-		std::cout << "Getting smallest edge length (sel) within the 1-ring around the vertex " << i << "..." << std::endl;
-		float sel = FLT_MAX; 
 		int sel_v = -1;
-		for(int n : neighbors[i]){
-			float euclidean_norm = sqrt((verticies[i].x - verticies[n].x)*(verticies[i].x - verticies[n].x)
-									  + (verticies[i].y - verticies[n].y)*(verticies[i].y - verticies[n].y)
-									  + (verticies[i].z - verticies[n].z)*(verticies[i].z - verticies[n].z));
-			if(euclidean_norm <= sel){
-				sel = euclidean_norm;
-				sel_v = n;
+		for(int j : neighbors[i]){
+			//IDEA: These norms are used later, so can save calculations if values are store.
+			float euclidean_norm = sqrt((verticies[j].x - verticies[i].x)*(verticies[j].x - verticies[i].x)
+									  + (verticies[j].y - verticies[i].y)*(verticies[j].y - verticies[i].y)
+									  + (verticies[j].z - verticies[i].z)*(verticies[j].z - verticies[i].z));
+			if(euclidean_norm <= sel[i]){
+				sel[i] = euclidean_norm;
+				sel_v = j;
 			}
 		}
-		std::cout << "   sel " << sel << " sel_v " << sel_v << std::endl;
+		std::cout << "sel[" << i << "] " << sel[i] << " sel_v " << sel_v << std::endl;
 	}
+	
+	std::cout << std::endl << "Calculating all f`_i..." << std::endl;	
+	
+	std::cout << std::endl << "Calculating all weights..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> weights;	
+	for(int p0 = 0; p0 < numVerticies; p0++){
+		for(int pi : neighbors[p0]){
+			//IDEA: Saving to new file, too slow. Saving to new whole array, too large.
+			//Only if I know if a vertex will never be processed again, can I save updated values back into the original memspace.
+			//That knowledge comes from 2ring neighbors. Does saving that Info actually save memory? 
+			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster)
+			float weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0])
+					/ sqrt((verticies[pi].x - verticies[p0].x)*(verticies[pi].x - verticies[p0].x)
+						 + (verticies[pi].y - verticies[p0].y)*(verticies[pi].y - verticies[p0].y)
+						 + (verticies[pi].z - verticies[p0].z)*(verticies[pi].z - verticies[p0].z));
+			weights[p0].insert(std::pair<int, float>(pi, weight));
+			std::cout << "weights[" << p0 << "][" << pi << "] " << weights[p0][pi] << std::endl;
+		}
+	}
+	
+	float featureVectors_updated[numVerticies] = {};
+	
 }
