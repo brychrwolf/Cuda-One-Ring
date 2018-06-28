@@ -8,21 +8,17 @@
 #include <map>
 
 typedef struct {
-	int x;
-	int y;
-	int z;
+	int x, y, z;
 } vertex;
 
 typedef struct {
-	int a;
-	int b;
-	int c;
+	int a, b, c;
 } face;
 
-float l2norm_diff(vertex* vs, int pi, int p0){
-	return sqrt((vs[pi].x - vs[p0].x)*(vs[pi].x - vs[p0].x)
-			  + (vs[pi].y - vs[p0].y)*(vs[pi].y - vs[p0].y)
-			  + (vs[pi].z - vs[p0].z)*(vs[pi].z - vs[p0].z));
+float l2norm_diff(vertex pi, vertex p0){
+	return sqrt((pi.x - p0.x)*(pi.x - p0.x)
+			  + (pi.y - p0.y)*(pi.y - p0.y)
+			  + (pi.z - p0.z)*(pi.z - p0.z));
 }
 
 int main(){
@@ -43,9 +39,6 @@ int main(){
 		(vertex) {-2, -2,  0},	(vertex) {16, -2,  0},
 		(vertex) {16, 22,  0},	(vertex) {-2, 22,  0}
 	};	
-	for(int i = 0; i < numVerticies; i++){
-		std::cout << i << " = {" << verticies[i].x << ", " << verticies[i].y << ", " << verticies[i].z << "}" <<std::endl;
-	}
 	
 	/*std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
 	std::random_device rd;
@@ -57,31 +50,24 @@ int main(){
 		std::cout << "featureVector [" << i << "] = " << featureVectors[i] << std::endl;
 	}*/
 	
-	std::cout << std::endl << "Set Feature Vectors..." << std::endl;
+	std::cout << "Set Feature Vectors..." << std::endl;
 	float featureVectors[numVerticies] = {	
-		-0.373397,
-		 0.645161,
-		 0.797587,
-		-0.520541,
-		-0.114591,
-		 0.788363,
-		-0.936573,
-		-0.699675,
-		-0.139383,
-		 0.152594,
-		-0.976301,
-		 0.288434,
-		-0.212369,
-		 0.722184,
-		 0.154177,
-		 0.510287,
-		 0.725236,
-		 0.992415,
-		 0.582556,
-		 0.2727,
-		-0.6929,
-		 0.40541
+		-0.373397,  0.645161,
+		 0.797587, -0.520541,
+		-0.114591,  0.788363,
+		-0.936573, -0.699675,
+		-0.139383,  0.152594,
+		-0.976301,  0.288434,
+		-0.212369,  0.722184,
+		 0.154177,  0.510287,
+		 0.725236,  0.992415,
+		 0.582556,  0.272700,
+		-0.692900,  0.405410
 	};
+	
+	for(int i = 0; i < numVerticies; i++){
+		std::cout << "verticies[" << i << "] = " << verticies[i].x << ", " << verticies[i].y << ", " << verticies[i].z << " featureVector " << featureVectors[i]<< std::endl;
+	}
 	
 	std::cout << std::endl << "Loading Faces..." << std::endl;
 	const int numFaces = 36;
@@ -109,71 +95,72 @@ int main(){
 		std::cout << i << " = {" << faces[i].a << ", " << faces[i].b << ", " << faces[i].c << "}" <<std::endl;
 	}
 	
-	std::cout << std::endl << "Finding 1 ring neighbors..." << std::endl;
-	std::set<int> neighbors[numVerticies] = {};
+	std::cout << std::endl << "Finding adjacent vertexes..." << std::endl;
+	std::set<int> adjacent_vertexes[numVerticies] = {};
 	for(int v = 0; v < numVerticies; v++){
 		for(int f = 0; f < numFaces; f++){			
 			if(faces[f].a == v){
-				neighbors[v].insert(faces[f].b);
-				neighbors[v].insert(faces[f].c);
+				adjacent_vertexes[v].insert(faces[f].b);
+				adjacent_vertexes[v].insert(faces[f].c);
 			}			
 			if(faces[f].b == v){
-				neighbors[v].insert(faces[f].a);
-				neighbors[v].insert(faces[f].c);
+				adjacent_vertexes[v].insert(faces[f].a);
+				adjacent_vertexes[v].insert(faces[f].c);
 			}			
 			if(faces[f].c == v){
-				neighbors[v].insert(faces[f].a);
-				neighbors[v].insert(faces[f].b);
+				adjacent_vertexes[v].insert(faces[f].a);
+				adjacent_vertexes[v].insert(faces[f].b);
 			}
 		}	
 	}	
 	for(int i = 0; i < numVerticies; i++){
 		std::cout << i << " meets ";
-		for(int j : neighbors[i]){
+		for(int j : adjacent_vertexes[i]){
 			std::cout << j << ", ";
 		}
 		std::cout << std::endl;
 	}
-
-	std::cout << std::endl << "Start Smoothing..." << std::endl;
+	/*********************************************************/
+	std::cout << std::endl << "Finished Loading." << std::endl;
+	/*********************************************************/
+	float minEdgeLength[numVerticies];
+	std::fill_n(minEdgeLength, numVerticies, FLT_MAX); //initialize array to max float value
+		
+	std::cout << std::endl << "Iterating over each vertex as p0..." << std::endl;
+	for(int p0 = 0; p0 < 1/*numVerticies*/; p0++){
 	
-	std::cout << std::endl << "Getting smallest edge length (sel) within the 1-ring around all verticies." << std::endl;
-	float sel[numVerticies];
-	std::fill_n(sel, numVerticies, FLT_MAX); //initialize array to max float value
-	for(int p0 = 0; p0 < numVerticies; p0++){
-		int sel_v = -1;
-		for(std::set<int>::iterator pi_iter = neighbors[p0].begin(); pi_iter != neighbors[p0].end(); pi_iter++){
+		std::cout << std::endl << "Calculating minimum edge length among adjacent verticies..." << std::endl;
+		int minEdgeLength_vertex = -1; // a minimum must exist, error if non is found
+		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;
+		for(std::set<int>::iterator pi_iter = adjacent_vertexes[p0].begin(); pi_iter != adjacent_vertexes[p0].end(); pi_iter++){
 			int pi = *pi_iter;
-			//IDEA: These norms are used later, so can save calculations if values are stored.
-			float norm_diff = l2norm_diff(verticies, pi, p0);
-			if(norm_diff <= sel[p0]){
-				sel[p0] = norm_diff;
-				sel_v = pi;
+			
+			float norm_diff = l2norm_diff(verticies[pi], verticies[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
+			if(norm_diff <= minEdgeLength[p0]){
+				minEdgeLength[p0] = norm_diff;
+				minEdgeLength_vertex = pi;
 			}
 			std::cout  << "p0 " << p0  << " pi " << pi << " norm_diff " << norm_diff << std::endl;
 		}
-		std::cout << "sel[" << p0 << "] " << sel[p0] << " sel_v " << sel_v << std::endl;
-	}
-	
-	std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
-	std::array<std::map<int, float>, numVerticies> f_primes;	
-	for(int p0 = 0; p0 < numVerticies; p0++){
-		for(int pi : neighbors[p0]){
-			//IDEA: Saving to new file, too slow. Saving to new whole array, too large.
-			//Only if I know if a vertex will never be processed again, can I save updated values back into the original memspace.
-			//That knowledge comes from 2ring neighbors. Does saving that Info actually save memory? 
-			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster (is it?))
-			float f_prime = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
+		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;
+
+		std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
+		std::array<std::map<int, float>, numVerticies> f_primes;
+		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
+		for(std::set<int>::iterator pi_iter = adjacent_vertexes[p0].begin(); pi_iter != adjacent_vertexes[p0].end(); pi_iter++){
+			int pi = *pi_iter;
+			
+			float f_prime = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies[pi], verticies[p0]);
 			f_primes[p0].insert(std::pair<int, float>(pi, f_prime));
 			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
 		}
 	}
-
+/*
 	std::cout << std::endl << "Calculating f^t/3, weighted mean of function value at triangles..." << std::endl;
 	std::array<std::map<int, float>, numVerticies> f_triangles;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
-		std::set<int>::iterator b = neighbors[p0].begin();
-		std::set<int>::iterator e = neighbors[p0].end();
+		std::set<int>::iterator b = adjacent_vertexes[p0].begin();
+		std::set<int>::iterator e = adjacent_vertexes[p0].end();
 		for(std::set<int>::iterator pi_iter = b; pi_iter != e; pi_iter++){
 			std::set<int>::iterator pip1_iter = (std::next(pi_iter, 1) != e) ? std::next(pi_iter, 1) : b; // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
 			int pi = *pi_iter;
@@ -187,11 +174,11 @@ int main(){
 	/*std::cout << std::endl << "Calculating areas of all triangles in Geodesic Disks ..." << std::endl;
 	std::array<std::map<int, float>, numVerticies> areas_of_triangles;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
-		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
-			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
-			float l2n_d = l2norm_diff(verticies, pi, pip1); //TODO: verticies does not contain correct values for pi or pip1... they must be scaled by sel[p0]
-			std::cout << "4*sel[p0]^2 " << 4*sel[p0]*sel[p0] << " l2n_d*l2n_d " << l2n_d*l2n_d << std::endl;
-			float area_of_triangle = l2n_d/4 * sqrt(4*sel[p0]*sel[p0] - l2n_d*l2n_d);
+		for(int pi = 1; pi < adjacent_vertexes[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % adjacent_vertexes[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+			float l2n_d = l2norm_diff(verticies, pi, pip1); //TODO: verticies does not contain correct values for pi or pip1... they must be scaled by minEdgeLength[p0]
+			std::cout << "4*minEdgeLength[p0]^2 " << 4*minEdgeLength[p0]*minEdgeLength[p0] << " l2n_d*l2n_d " << l2n_d*l2n_d << std::endl;
+			float area_of_triangle = l2n_d/4 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - l2n_d*l2n_d);
 			areas_of_triangles[p0].insert(std::pair<int, float>(pi, area_of_triangle));
 			std::cout << "areas_of_triangles[" << p0 << "][" << pi << "] " << areas_of_triangles[p0][pi] << std::endl;
 		}
@@ -200,10 +187,10 @@ int main(){
 	std::cout << std::endl << "Calculating weights from angles in Geodesic Disks ..." << std::endl;
 	std::array<std::map<int, float>, numVerticies> angle_weights;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
-		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
-			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+		for(int pi = 1; pi < adjacent_vertexes[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % adjacent_vertexes[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
 			float alpha = XXXX;
-			float angle_weight = sin(alpha)sel[p0]*sel[p0];
+			float angle_weight = sin(alpha)minEdgeLength[p0]*minEdgeLength[p0];
 			angle_weights[p0].insert(std::pair<int, float>(pi, angle_weight));
 			std::cout << "angle_weights[" << p0 << "][" << pi << "] " << angle_weights[p0][pi] << std::endl;
 		}
@@ -212,11 +199,11 @@ int main(){
 	std::cout << std::endl << "Calculating weighted mean function valuewith total area ..." << std::endl;
 	std::array<float, numVerticies> weighted_mean_function_values;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
-		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
-			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+		for(int pi = 1; pi < adjacent_vertexes[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % adjacent_vertexes[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
 
 			float alpha = XXXX;
-			float weighted_mean_function_value = sin(alpha)sel[p0]*sel[p0];
+			float weighted_mean_function_value = sin(alpha)minEdgeLength[p0]*minEdgeLength[p0];
 		}
 		angle_weights[p0].insert(std::pair<int, float>(pi, angle_weight));
 		std::cout << "angle_weights[" << p0 << "][" << pi << "] " << angle_weights[p0][pi] << std::endl;
