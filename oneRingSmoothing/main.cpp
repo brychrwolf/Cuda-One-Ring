@@ -179,9 +179,46 @@ int main(){
 			float triangle_weight = (featureVectors[p0] + neighbor_weights[p0][pi] + neighbor_weights[p0][pip1])/3;
 			mean_triangle_weights[p0].insert(std::pair<int, float>(pi, triangle_weight));
 			std::cout << "mean_triangle_weights[" << p0 << "][" << pi << "] " << mean_triangle_weights[p0][pi] << std::endl;
-		
 		}
 	}
+
+	std::cout << std::endl << "Calculating areas of all triangles in Geodesic Disks ..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> areas_of_triangles;	
+	for(int p0 = 0; p0 < numVerticies; p0++){
+		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+			float l2n_d = l2norm_diff(verticies, pi, pip1); //TODO: verticies does not contain correct values for pi or pip1... they must be scaled by sel[p0]
+			std::cout << "4*sel[p0]^2 " << 4*sel[p0]*sel[p0] << " l2n_d*l2n_d " << l2n_d*l2n_d << std::endl;
+			float area_of_triangle = l2n_d/4 * sqrt(4*sel[p0]*sel[p0] - l2n_d*l2n_d);
+			areas_of_triangles[p0].insert(std::pair<int, float>(pi, area_of_triangle));
+			std::cout << "areas_of_triangles[" << p0 << "][" << pi << "] " << areas_of_triangles[p0][pi] << std::endl;
+		}
+	}
+
+	/*std::cout << std::endl << "Calculating weights from angles in Geodesic Disks ..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> angle_weights;	
+	for(int p0 = 0; p0 < numVerticies; p0++){
+		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+			float alpha = XXXX;
+			float angle_weight = sin(alpha)sel[p0]*sel[p0];
+			angle_weights[p0].insert(std::pair<int, float>(pi, angle_weight));
+			std::cout << "angle_weights[" << p0 << "][" << pi << "] " << angle_weights[p0][pi] << std::endl;
+		}
+	}
+	
+	std::cout << std::endl << "Calculating weighted mean function valuewith total area ..." << std::endl;
+	std::array<float, numVerticies> weighted_mean_function_values;	
+	for(int p0 = 0; p0 < numVerticies; p0++){
+		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
+			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+
+			float alpha = XXXX;
+			float weighted_mean_function_value = sin(alpha)sel[p0]*sel[p0];
+		}
+		angle_weights[p0].insert(std::pair<int, float>(pi, angle_weight));
+		std::cout << "angle_weights[" << p0 << "][" << pi << "] " << angle_weights[p0][pi] << std::endl;
+	}*/
 	
 	
 	float featureVectors_updated[numVerticies] = {};
