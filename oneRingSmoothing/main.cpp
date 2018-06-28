@@ -142,8 +142,9 @@ int main(){
 	std::fill_n(sel, numVerticies, FLT_MAX); //initialize array to max float value
 	for(int p0 = 0; p0 < numVerticies; p0++){
 		int sel_v = -1;
-		for(int pi : neighbors[p0]){
-			//IDEA: These norms are used later, so can save calculations if values are store.
+		for(std::set<int>::iterator pi_iter = neighbors[p0].begin(); pi_iter != neighbors[p0].end(); pi_iter++){
+			int pi = *pi_iter;
+			//IDEA: These norms are used later, so can save calculations if values are stored.
 			float norm_diff = l2norm_diff(verticies, pi, p0);
 			if(norm_diff <= sel[p0]){
 				sel[p0] = norm_diff;
@@ -154,35 +155,36 @@ int main(){
 		std::cout << "sel[" << p0 << "] " << sel[p0] << " sel_v " << sel_v << std::endl;
 	}
 	
-	std::cout << std::endl << "Calculating all f`_i..." << std::endl;	
-	
-	std::cout << std::endl << "Calculating weights for all vertex pairs..." << std::endl;
-	std::array<std::map<int, float>, numVerticies> neighbor_weights;	
+	std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> f_primes;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
 		for(int pi : neighbors[p0]){
 			//IDEA: Saving to new file, too slow. Saving to new whole array, too large.
 			//Only if I know if a vertex will never be processed again, can I save updated values back into the original memspace.
 			//That knowledge comes from 2ring neighbors. Does saving that Info actually save memory? 
-			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster)
-			
-			float neighbor_weight = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
-			neighbor_weights[p0].insert(std::pair<int, float>(pi, neighbor_weight));
-			std::cout << "neighbor_weights[" << p0 << "][" << pi << "] " << neighbor_weights[p0][pi] << std::endl;
+			//n^3 (or worse) complexity is too sloow also! Oh... but can derive 2-ring from the 1ring neighbors list (which is MUCH faster (is it?))
+			float f_prime = featureVectors[p0] + sel[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(verticies, pi, p0);
+			f_primes[p0].insert(std::pair<int, float>(pi, f_prime));
+			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
 		}
 	}
 
-	std::cout << std::endl << "Calculating weights for all triangles..." << std::endl;
-	std::array<std::map<int, float>, numVerticies> mean_triangle_weights;	
+	std::cout << std::endl << "Calculating f^t/3, weighted mean of function value at triangles..." << std::endl;
+	std::array<std::map<int, float>, numVerticies> f_triangles;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
-		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
-			int pip1 = (pi+1) % neighbors[p0].size(); // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
-			float triangle_weight = (featureVectors[p0] + neighbor_weights[p0][pi] + neighbor_weights[p0][pip1])/3;
-			mean_triangle_weights[p0].insert(std::pair<int, float>(pi, triangle_weight));
-			std::cout << "mean_triangle_weights[" << p0 << "][" << pi << "] " << mean_triangle_weights[p0][pi] << std::endl;
+		std::set<int>::iterator b = neighbors[p0].begin();
+		std::set<int>::iterator e = neighbors[p0].end();
+		for(std::set<int>::iterator pi_iter = b; pi_iter != e; pi_iter++){
+			std::set<int>::iterator pip1_iter = (std::next(pi_iter, 1) != e) ? std::next(pi_iter, 1) : b; // wrap around indexing //TODO: how can one ensure indexs are in order, and adjacent endges have index +/1?!
+			int pi = *pi_iter;
+			int pip1 = *pip1_iter;
+			float f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1])/3;
+			f_triangles[p0].insert(std::pair<int, float>(pi, f_triangle));
+			std::cout << "f_trianlges[" << p0 << "][" << pi << "] (pip1=" << pip1 << ") " << f_triangles[p0][pi] << std::endl;
 		}
 	}
 
-	std::cout << std::endl << "Calculating areas of all triangles in Geodesic Disks ..." << std::endl;
+	/*std::cout << std::endl << "Calculating areas of all triangles in Geodesic Disks ..." << std::endl;
 	std::array<std::map<int, float>, numVerticies> areas_of_triangles;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
 		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
@@ -195,7 +197,7 @@ int main(){
 		}
 	}
 
-	/*std::cout << std::endl << "Calculating weights from angles in Geodesic Disks ..." << std::endl;
+	std::cout << std::endl << "Calculating weights from angles in Geodesic Disks ..." << std::endl;
 	std::array<std::map<int, float>, numVerticies> angle_weights;	
 	for(int p0 = 0; p0 < numVerticies; p0++){
 		for(int pi = 1; pi < neighbors[p0].size(); pi++){ // intentionally skip point zero, as its part of all triangles
