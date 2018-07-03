@@ -164,14 +164,17 @@ int main(){
 	std::cout << std::endl << "  Begin Calculating..." << std::endl;
 	/*********************************************************/
 	float minEdgeLength[numVertices];
-	std::fill_n(minEdgeLength, numVertices, FLT_MAX); //initialize array to max float value
-	std::array<std::map<int, float>, numVertices> f_primes;
-	std::array<std::map<int, float>, numVertices> f_triangles;
-	std::array<std::map<int, float>, numVertices> a_triangles_pythag;
-	std::array<std::map<int, float>, numVertices> a_triangles_coord;
+	std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max float value
+	std::array<std::map<int, float>, numVertices> f_primes; // function value at delta_min along pi
+	std::array<std::map<int, float>, numVertices> f_triangles; // function value of triangles 
+	std::array<std::map<int, float>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
+	std::array<std::map<int, float>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
+	std::array<float, numVertices> wa_geoDisks; // weighted area of triangles comprising total geodiseic disk
 		
 	std::cout << std::endl << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0; p0 < 1/*numVertices*/; p0++){
+
+
 	
 		std::cout << std::endl << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 		int minEdgeLength_vertex = -1; // a minimum must exist, error if none is found
@@ -187,6 +190,8 @@ int main(){
 		}
 		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;
 
+
+
 		std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
 		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
@@ -195,6 +200,8 @@ int main(){
 			f_primes[p0].insert(std::pair<int, float>(pi, f_prime));
 			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
 		}
+
+
 		
 		std::cout << std::endl << "Calculating f_triangles, weighted mean (f0 + f'i + f'ip1)/3..." << std::endl;
 		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
@@ -215,10 +222,12 @@ int main(){
 				}
 			}					
 			
-			float f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1]);
+			float f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1]); //save the /3 for later like in paper
 			f_triangles[p0].insert(std::pair<int, float>(ti, f_triangle));
 			std::cout << "f_triangles[" << p0 << "][" << ti << "] " << f_triangles[p0][ti] << std::endl;
 		}
+
+
 		
 		std::cout << std::endl << "Calculating a_triangles_pythag, area to be used as weights..." << std::endl;
 		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
@@ -258,6 +267,8 @@ int main(){
 			a_triangles_pythag[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
+
+
 		
 		std::cout << std::endl << "Calculating a_triangles_coord, area to be used as weights..." << std::endl;
 		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
@@ -294,8 +305,20 @@ int main(){
 			a_triangles_coord[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_coord[" << p0 << "][" << ti << "] " << a_triangles_coord[p0][ti] << std::endl;
 		}
-	}	
-	
-	float featureVectors_updated[numVertices] = {};
+
+
+
+		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
+		std::cout << "Iterating over each a_triangles_pythag as ti..." << std::endl;
+		float area = 0.0;
+		float weighted_area = 0.0;
+		for(int ti = 0; ti > a_triangles_pythag.size(); ti++){
+			area += a_triangles_pythag[p0][ti];
+			weighted_area += a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
+		}
+		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
+		wa_geoDisks[p0].insert(wa_geoDisk);
+		std::cout << "wa_geoDisk[" << p0 << "]" << wa_geoDisk[p0] << std::endl;
+	}
 	
 }
