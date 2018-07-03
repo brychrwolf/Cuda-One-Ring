@@ -17,6 +17,14 @@ struct vertex {
         z = z*scale;
         return *this;
     }
+	
+	vertex& operator-(const vertex p0)
+    {
+        x = x-p0.x;
+        y = y-p0.y;
+        z = z-p0.z;
+        return *this;
+    }
 };
 
 typedef int face[3];
@@ -240,10 +248,13 @@ int main(){
 			//std::cout << "l2norm_diff(vertices[pi], vertices[p0]) " << l2norm_diff(vertices[pi], vertices[p0]) << " l2norm_diff(vertices[pip1], vertices[p0]) " << l2norm_diff(vertices[pip1], vertices[p0]) << std::endl;		
 			//std::cout << "scale_pi " << scale_pi << " scale_pip1 " << scale_pip1 << std::endl;
 			
-			float b = l2norm_diff(vertices[pip1]*scale_pip1, vertices[pi]*scale_pi);
-			float a_triangle = b/2 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - b*b);	
-			//std::cout << "b " << b << " a_triangle " << a_triangle << std::endl;
-			
+			float base = l2norm_diff(vertices[pip1]*scale_pip1, vertices[pi]*scale_pi); // distance from pi to pip1
+			float height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - base*base/4);
+			float a_triangle = base * height / 2;
+
+			// or like as paper
+			//float a_triangle = base/4 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - base*base); // multiplying by 4 inside the sqrt countered by dividing by 2 outside
+
 			a_triangles_pythag[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
@@ -256,29 +267,29 @@ int main(){
 			int pi = -1;
 			int pip1 = -1;
 			bool isPiAssigned = false;
-			//std::cout << std::endl;
-			for(int v : faces[ti]){ // for each vertex in this face (a, b, c)
-				//std::cout << "v " << v << " ";
-				if(v != p0){ // exclude p0
+			for(int v : faces[ti]){
+				if(v != p0){
 					if(isPiAssigned){
-						pip1 = v; // assign the other corner to pip1
+						pip1 = v; 
 					}else{
-						pi = v; // assign the first corner to pi
+						pi = v;
 						isPiAssigned = true;
 					}
 				}
 			}
 			
-			float scale_pi = minEdgeLength[p0] / l2norm_diff(vertices[pi], vertices[p0]);
+			float scale_pi   = minEdgeLength[p0] / l2norm_diff(vertices[pi],   vertices[p0]);
 			float scale_pip1 = minEdgeLength[p0] / l2norm_diff(vertices[pip1], vertices[p0]);			
 
 			vertex v_p0 = vertices[p0];
-			vertex v_pi = vertices[pi]*scale_pi;
-			vertex v_pip1 = vertices[pip1]*scale_pip1;
-			float a = v_p0.x*(v_pi.y-v_pip1.y);
-			float b = v_pi.x*(v_pip1.y-v_p0.y);
-			float c = v_pip1.x*(v_p0.y-v_pi.y);
-			float a_triangle = fabs((a + b + c) / 2);
+			vertex v_pi = vertices[pi]*scale_pi - v_p0;
+			vertex v_pip1 = vertices[pip1]*scale_pip1 - v_p0;
+
+			// build cross product
+			float x3 = v_pi.y*v_pip1.z - v_pip1.y*v_pi.z;
+			float y3 = v_pi.x*v_pip1.z - v_pip1.x*v_pi.z;
+			float z3 = v_pi.x*v_pip1.y - v_pip1.x*v_pi.y;
+			float a_triangle = sqrt(x3*x3 + y3*y3 + z3*z3) / 2;
 			
 			a_triangles_coord[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_coord[" << p0 << "][" << ti << "] " << a_triangles_coord[p0][ti] << std::endl;
