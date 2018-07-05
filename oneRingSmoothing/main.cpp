@@ -169,7 +169,7 @@ int main(){
 	std::array<std::map<int, float>, numVertices> f_triangles; // function value of triangles 
 	std::array<std::map<int, float>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
 	std::array<std::map<int, float>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
-	std::array<float, numVertices> wa_geoDisks; // weighted area of triangles comprising total geodiseic disk
+	float wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
 		
 	std::cout << std::endl << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0; p0 < 1/*numVertices*/; p0++){
@@ -309,16 +309,18 @@ int main(){
 
 
 		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
-		std::cout << "Iterating over each a_triangles_pythag as ti..." << std::endl;
+		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
 		float area = 0.0;
 		float weighted_area = 0.0;
-		for(int ti = 0; ti > a_triangles_pythag.size(); ti++){
+		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
+			int ti = *ti_iter;
 			area += a_triangles_pythag[p0][ti];
 			weighted_area += a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
+			std::cout << "  weighted_area " << weighted_area << " area " << area << std::endl;
 		}
 		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
-		wa_geoDisks[p0].insert(wa_geoDisk);
-		std::cout << "wa_geoDisk[" << p0 << "]" << wa_geoDisk[p0] << std::endl;
+		wa_geoDisks[p0] = (wa_geoDisk);
+		std::cout << "wa_geoDisks[" << p0 << "] " << wa_geoDisks[p0] << std::endl;
 	}
 	
 }
