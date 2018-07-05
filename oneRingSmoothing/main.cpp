@@ -7,29 +7,26 @@
 #include <vector>
 #include <map>
 
+int P0_BEGIN;
+int P0_END;
+
 struct vertex {
 	float x, y, z;
 	
-	vertex& operator*(const float scale)
+	vertex operator*(const float scale)
     {
-        x = x*scale;
-        y = y*scale;
-        z = z*scale;
-        return *this;
+		return (vertex) {x*scale, y*scale, z*scale};
     }
 	
-	vertex& operator-(const vertex p0)
+	vertex operator-(const vertex p0)
     {
-        x = x-p0.x;
-        y = y-p0.y;
-        z = z-p0.z;
-        return *this;
+		return (vertex) {x-p0.x, y-p0.y, z-p0.z};
     }
 };
 
 typedef int face[3];
 
-float l2norm_diff(vertex pi, vertex p0){
+float l2norm_diff(const vertex pi, const vertex p0){
 	return sqrt((pi.x - p0.x)*(pi.x - p0.x)
 			  + (pi.y - p0.y)*(pi.y - p0.y)
 			  + (pi.z - p0.z)*(pi.z - p0.z));
@@ -37,22 +34,22 @@ float l2norm_diff(vertex pi, vertex p0){
 
 int main(){
 	/*********************************************************/
-	std::cout << std::endl << "  Begin Loading Mesh." << std::endl;
+	std::cout << std::endl << "****** Begin Loading Mesh." << std::endl;
 	/*********************************************************/	
 	std::cout << "Loading Vertices..." << std::endl;
 	const int numVertices = 22;
 	vertex vertices[numVertices] = {
-		(vertex) { 0,  0,  0},	(vertex) { 2,  0,  0},
-		(vertex) {12,  0,  0},	(vertex) {14,  0,  0},
-		(vertex) {14, 20,  0},	(vertex) {12, 20,  0},
-		(vertex) { 2, 20,  0},	(vertex) { 0, 20,  0},
-		(vertex) { 1,  1, -1},	(vertex) {13,  1, -1},
-		(vertex) {13, 19, -1},	(vertex) { 1, 19, -1},
-		(vertex) { 2, 10,  0},	(vertex) {12, 10,  0},
-		(vertex) {12, 12,  0},	(vertex) { 2, 12,  0},
-		(vertex) { 1, 11, -1},	(vertex) {13, 11, -1},
-		(vertex) {-2, -2,  0},	(vertex) {16, -2,  0},
-		(vertex) {16, 22,  0},	(vertex) {-2, 22,  0}
+		(vertex) { 0,  0,  0},	(vertex) { 2,  0,  0}, //  0,  1
+		(vertex) {12,  0,  0},	(vertex) {14,  0,  0}, //  2,  3
+		(vertex) {14, 20,  0},	(vertex) {12, 20,  0}, //  4,  5
+		(vertex) { 2, 20,  0},	(vertex) { 0, 20,  0}, //  6,  7
+		(vertex) { 1,  1, -1},	(vertex) {13,  1, -1}, //  8,  9
+		(vertex) {13, 19, -1},	(vertex) { 1, 19, -1}, // 10, 11
+		(vertex) { 2, 10,  0},	(vertex) {12, 10,  0}, // 12, 13
+		(vertex) {12, 12,  0},	(vertex) { 2, 12,  0}, // 14, 15
+		(vertex) { 1, 11, -1},	(vertex) {13, 11, -1}, // 16, 17
+		(vertex) {-2, -2,  0},	(vertex) {16, -2,  0}, // 18, 19
+		(vertex) {16, 22,  0},	(vertex) {-2, 22,  0}  // 20, 21
 	};	
 	
 	/*std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
@@ -67,17 +64,17 @@ int main(){
 	
 	std::cout << "Set Feature Vectors..." << std::endl;
 	float featureVectors[numVertices] = {	
-		-0.373397,  0.645161,
-		 0.797587, -0.520541,
-		-0.114591,  0.788363,
-		-0.936573, -0.699675,
-		-0.139383,  0.152594,
-		-0.976301,  0.288434,
-		-0.212369,  0.722184,
-		 0.154177,  0.510287,
-		 0.725236,  0.992415,
-		 0.582556,  0.272700,
-		-0.692900,  0.405410
+		-0.373397,  0.645161, //  0,  1
+		 0.797587, -0.520541, //  2,  3
+		-0.114591,  0.788363, //  4,  5
+		-0.936573, -0.699675, //  6,  7
+		-0.139383,  0.152594, //  8,  9
+		-0.976301,  0.288434, // 10, 11
+		-0.212369,  0.722184, // 12, 13
+		 0.154177,  0.510287, // 14, 15
+		 0.725236,  0.992415, // 16, 17
+		 0.582556,  0.272700, // 18, 19
+		-0.692900,  0.405410  // 20, 21
 	};	
 	for(int i = 0; i < numVertices; i++){
 		std::cout << "vertices[" << i << "] = " << vertices[i].x << ", " << vertices[i].y << ", " << vertices[i].z << " featureVector " << featureVectors[i]<< std::endl;
@@ -86,45 +83,47 @@ int main(){
 	std::cout << std::endl << "Loading Faces..." << std::endl;
 	const int numFaces = 36;
 	face faces[numFaces] = {
-		{ 0,  1,  8}, { 1, 16,  8},
-		{ 1, 12, 16}, {12, 13, 16},
-		{13, 17, 16}, { 9, 17, 13},
-		{ 2,  9, 13}, { 2,  3,  9},
-		{ 3, 10,  9}, { 3,  4, 10},
-		{ 4,  5, 10}, { 5, 17, 10},
-		{ 5, 14, 17}, {14, 15, 17},
-		{15, 16, 17}, {11, 16, 15},
-		{ 6, 11, 15}, { 6,  7, 11},
-		{ 7,  8, 11}, { 0,  8,  7},
-		{ 0, 18,  1}, { 1, 18, 19},
-		{ 1, 19,  2}, { 2, 19,  3},
-		{ 3, 19,  4}, { 4, 19, 20},
-		{ 4, 20,  5}, { 5, 20, 21},
-		{ 5, 21,  6}, { 6, 21,  7},
-		{ 0,  7, 21}, { 0, 21, 18},
-		{ 1,  2, 12}, { 2, 13, 12},
-		{ 5,  6, 14}, { 6, 15, 14}
+		{ 0,  1,  8}, { 1, 16,  8}, //  0,  1
+		{ 1, 12, 16}, {12, 13, 16}, //  2,  3
+		{13, 17, 16}, { 9, 17, 13}, //  4,  5
+		{ 2,  9, 13}, { 2,  3,  9}, //  6,  7
+		{ 3, 10,  9}, { 3,  4, 10}, //  8,  9
+		{ 4,  5, 10}, { 5, 17, 10}, // 10, 11
+		{ 5, 14, 17}, {14, 15, 17}, // 12, 13
+		{15, 16, 17}, {11, 16, 15}, // 14, 15
+		{ 6, 11, 15}, { 6,  7, 11}, // 16, 17
+		{ 7,  8, 11}, { 0,  8,  7}, // 18, 19
+		{ 0, 18,  1}, { 1, 18, 19}, // 20, 21
+		{ 1, 19,  2}, { 2, 19,  3}, // 22, 23
+		{ 3, 19,  4}, { 4, 19, 20}, // 24, 25
+		{ 4, 20,  5}, { 5, 20, 21}, // 26, 27
+		{ 5, 21,  6}, { 6, 21,  7}, // 28, 29
+		{ 0,  7, 21}, { 0, 21, 18}, // 30, 31
+		{ 1,  2, 12}, { 2, 13, 12}, // 32, 33
+		{ 5,  6, 14}, { 6, 15, 14}  // 34, 35
 	};	
 	for(int i = 0; i < numFaces; i++){
 		std::cout << i << " = {" << faces[i][0] << ", " << faces[i][1] << ", " << faces[i][2] << "}" <<std::endl;
 	}
 	/*********************************************************/
-	std::cout << std::endl << "  Finished Loading." << std::endl;
+	std::cout << std::endl << "****** Finished Loading." << std::endl;
 	/*********************************************************/
 	/*********************************************************/
-	std::cout << std::endl << "  Begin Building Tables..." << std::endl;
+	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/*********************************************************/
+	int P0_BEGIN = 2;//0;
+	int P0_END = 3;//numVertices;
 	
 	std::cout << std::endl << "Calculating reverse vertex-face lookup table..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
-	for(int v = 0; v < 1 /*numVertices*/; v++){
+	for(int v = P0_BEGIN; v < P0_END; v++){
 		for(int f = 0; f < numFaces; f++){			
 			if(faces[f][0] == v || faces[f][1] == v || faces[f][2] == v ){
 				facesOfVertices[v].insert(f);
 			}
 		}
 	}
-	for(int v = 0; v < 1 /*numVertices*/; v++){
+	for(int v = P0_BEGIN; v < P0_END; v++){
 		std::cout << v << " is a corner of faces: ";
 		for(int f : facesOfVertices[v]){
 			std::cout << f << ", ";
@@ -134,7 +133,7 @@ int main(){
 	
 	std::cout << std::endl << "Finding adjacent vertices..." << std::endl;
 	std::set<int> adjacentVertices[numVertices] = {};
-	for(int v = 0; v < 1 /*numVertices*/; v++){
+	for(int v = P0_BEGIN; v < P0_END; v++){
 		for(int f : facesOfVertices[v]){
 			if(faces[f][0] == v){
 				adjacentVertices[v].insert(faces[f][1]);
@@ -150,7 +149,7 @@ int main(){
 			}
 		}	
 	}	
-	for(int i = 0; i < 1 /*numVertices*/; i++){
+	for(int i = P0_BEGIN; i < P0_END; i++){
 		std::cout << i << " meets ";
 		for(int j : adjacentVertices[i]){
 			std::cout << j << ", ";
@@ -158,10 +157,10 @@ int main(){
 		std::cout << std::endl;
 	}
 	/*********************************************************/
-	std::cout << std::endl << "  Finished Building Tables." << std::endl;
+	std::cout << std::endl << "****** Finished Building Tables." << std::endl;
 	/*********************************************************/
 	/*********************************************************/
-	std::cout << std::endl << "  Begin Calculating..." << std::endl;
+	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*********************************************************/
 	float minEdgeLength[numVertices];
 	std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max float value
@@ -172,7 +171,7 @@ int main(){
 	float wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
 		
 	std::cout << std::endl << "Iterating over each vertex as p0..." << std::endl;
-	for(int p0 = 0; p0 < 1/*numVertices*/; p0++){
+	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
 
 
 	
@@ -191,7 +190,6 @@ int main(){
 		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;
 
 
-
 		std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
 		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
@@ -200,7 +198,6 @@ int main(){
 			f_primes[p0].insert(std::pair<int, float>(pi, f_prime));
 			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
 		}
-
 
 		
 		std::cout << std::endl << "Calculating f_triangles, weighted mean (f0 + f'i + f'ip1)/3..." << std::endl;
@@ -234,12 +231,9 @@ int main(){
 		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
 			int ti = *ti_iter;
 			
-			int pi = -1;
-			int pip1 = -1;
+			int pi, pip1;
 			bool isPiAssigned = false;
-			//std::cout << std::endl;
 			for(int v : faces[ti]){ // for each vertex in this face (a, b, c)
-				//std::cout << "v " << v << " ";
 				if(v != p0){ // exclude p0
 					if(isPiAssigned){
 						pip1 = v; // assign the other corner to pip1
@@ -249,14 +243,9 @@ int main(){
 					}
 				}
 			}
-			//std::cout << std::endl;
-			//std::cout << "p0 " << p0 << " pi " << pi << " pip1 " << pip1 << " ti " << ti << std::endl;
-			
+
 			float scale_pi = minEdgeLength[p0] / l2norm_diff(vertices[pi], vertices[p0]);
-			float scale_pip1 = minEdgeLength[p0] / l2norm_diff(vertices[pip1], vertices[p0]);			
-			//std::cout << "l2norm_diff(vertices[pi], vertices[p0]) " << l2norm_diff(vertices[pi], vertices[p0]) << " l2norm_diff(vertices[pip1], vertices[p0]) " << l2norm_diff(vertices[pip1], vertices[p0]) << std::endl;		
-			//std::cout << "scale_pi " << scale_pi << " scale_pip1 " << scale_pip1 << std::endl;
-			
+			float scale_pip1 = minEdgeLength[p0] / l2norm_diff(vertices[pip1], vertices[p0]);		
 			float base = l2norm_diff(vertices[pip1]*scale_pip1, vertices[pi]*scale_pi); // distance from pi to pip1
 			float height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - base*base/4);
 			float a_triangle = base * height / 2;
@@ -267,10 +256,8 @@ int main(){
 			a_triangles_pythag[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
-
-
 		
-		std::cout << std::endl << "Calculating a_triangles_coord, area to be used as weights..." << std::endl;
+		/*std::cout << std::endl << "Calculating a_triangles_coord, area to be used as weights..." << std::endl;
 		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
 		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
 			int ti = *ti_iter;
@@ -304,19 +291,18 @@ int main(){
 			
 			a_triangles_coord[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_coord[" << p0 << "][" << ti << "] " << a_triangles_coord[p0][ti] << std::endl;
-		}
+		}*/
 
 
 
 		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
 		float area = 0.0;
 		float weighted_area = 0.0;
+		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
 		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
 			int ti = *ti_iter;
 			area += a_triangles_pythag[p0][ti];
 			weighted_area += a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
-			std::cout << "  weighted_area " << weighted_area << " area " << area << std::endl;
 		}
 		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
 		wa_geoDisks[p0] = (wa_geoDisk);
