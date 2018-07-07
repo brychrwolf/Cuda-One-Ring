@@ -10,26 +10,32 @@
 int P0_BEGIN;
 int P0_END;
 
-struct vertex {
-	float x, y, z;
-	
-	vertex operator*(const float scale)
-    {
-		return (vertex) {x*scale, y*scale, z*scale};
-    }
-	
-	vertex operator-(const vertex p0)
-    {
-		return (vertex) {x-p0.x, y-p0.y, z-p0.z};
-    }
-};
+typedef std::array<float, 3> vertex;
+typedef std::array<int, 3> face;
 
-typedef int face[3];
+vertex scale(vertex v, float scalar){
+	return {v[0]*scalar,
+			v[1]*scalar, 
+			v[2]*scalar};
+}
+
+vertex combine(vertex v1, vertex v2){
+	return {v1[0] + v2[0],
+			v1[1] + v2[1],
+			v1[2] + v2[2]};
+}
+
+
+float l2norm(const vertex pi){
+	return sqrt(pi[0]*pi[0]
+			  + pi[1]*pi[1]
+			  + pi[2]*pi[2]);
+}
 
 float l2norm_diff(const vertex pi, const vertex p0){
-	return sqrt((pi.x - p0.x)*(pi.x - p0.x)
-			  + (pi.y - p0.y)*(pi.y - p0.y)
-			  + (pi.z - p0.z)*(pi.z - p0.z));
+	return sqrt((pi[0] - p0[0])*(pi[0] - p0[0])
+			  + (pi[1] - p0[1])*(pi[1] - p0[1])
+			  + (pi[2] - p0[2])*(pi[2] - p0[2]));
 }
 
 int main(){
@@ -39,17 +45,17 @@ int main(){
 	std::cout << "Loading Vertices..." << std::endl;
 	const int numVertices = 22;
 	vertex vertices[numVertices] = {
-		(vertex) { 0,  0,  0},	(vertex) { 2,  0,  0}, //  0,  1
-		(vertex) {12,  0,  0},	(vertex) {14,  0,  0}, //  2,  3
-		(vertex) {14, 20,  0},	(vertex) {12, 20,  0}, //  4,  5
-		(vertex) { 2, 20,  0},	(vertex) { 0, 20,  0}, //  6,  7
-		(vertex) { 1,  1, -1},	(vertex) {13,  1, -1}, //  8,  9
-		(vertex) {13, 19, -1},	(vertex) { 1, 19, -1}, // 10, 11
-		(vertex) { 2, 10,  0},	(vertex) {12, 10,  0}, // 12, 13
-		(vertex) {12, 12,  0},	(vertex) { 2, 12,  0}, // 14, 15
-		(vertex) { 1, 11, -1},	(vertex) {13, 11, -1}, // 16, 17
-		(vertex) {-2, -2,  0},	(vertex) {16, -2,  0}, // 18, 19
-		(vertex) {16, 22,  0},	(vertex) {-2, 22,  0}  // 20, 21
+		{ 0,  0,  0}, { 2,  0,  0}, //  0,  1
+		{12,  0,  0}, {14,  0,  0}, //  2,  3
+		{14, 20,  0}, {12, 20,  0}, //  4,  5
+		{ 2, 20,  0}, { 0, 20,  0}, //  6,  7
+		{ 1,  1, -1}, {13,  1, -1}, //  8,  9
+		{13, 19, -1}, { 1, 19, -1}, // 10, 11
+		{ 2, 10,  0}, {12, 10,  0}, // 12, 13
+		{12, 12,  0}, { 2, 12,  0}, // 14, 15
+		{ 1, 11, -1}, {13, 11, -1}, // 16, 17
+		{-2, -2,  0}, {16, -2,  0}, // 18, 19
+		{16, 22,  0}, {-2, 22,  0}  // 20, 21
 	};	
 	
 	/*std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
@@ -77,7 +83,7 @@ int main(){
 		-0.692900,  0.405410  // 20, 21
 	};	
 	for(int i = 0; i < numVertices; i++){
-		std::cout << "vertices[" << i << "] = " << vertices[i].x << ", " << vertices[i].y << ", " << vertices[i].z << " featureVector " << featureVectors[i]<< std::endl;
+		std::cout << "vertices[" << i << "] = " << vertices[i][0] << ", " << vertices[i][1] << ", " << vertices[i][2] << " featureVector " << featureVectors[i]<< std::endl;
 	}
 	
 	std::cout << std::endl << "Loading Faces..." << std::endl;
@@ -111,8 +117,8 @@ int main(){
 	/******************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/******************************************************************/
-	int P0_BEGIN = 2;//0;
-	int P0_END = 3;//numVertices;
+	int P0_BEGIN = 0;
+	int P0_END = numVertices;
 	
 	std::cout << std::endl << "Calculating reverse vertex-face lookup table..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
@@ -244,10 +250,18 @@ int main(){
 				}
 			}
 
-			float scale_pi = minEdgeLength[p0] / l2norm_diff(vertices[pi], vertices[p0]);
-			float scale_pip1 = minEdgeLength[p0] / l2norm_diff(vertices[pip1], vertices[p0]);		
-			float base = l2norm_diff(vertices[pip1]*scale_pip1, vertices[pi]*scale_pi); // distance from pi to pip1
-			float height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - base*base/4);
+			vertex relative_pi = combine(vertices[pi],   scale(vertices[p0], -1));
+			vertex unit_pi = scale(relative_pi, 1/l2norm(relative_pi));
+			vertex scaled_pi = scale(unit_pi, minEdgeLength[p0]);
+			vertex mel_pi = combine(scaled_pi, vertices[p0]);
+			
+			vertex relative_pip1 = combine(vertices[pip1],   scale(vertices[p0], -1));
+			vertex unit_pip1 = scale(relative_pip1, 1/l2norm(relative_pip1));
+			vertex scaled_pip1 = scale(unit_pip1, minEdgeLength[p0]);
+			vertex mel_pip1 = combine(scaled_pip1, vertices[p0]);
+			
+			float base = l2norm_diff(mel_pip1, mel_pi);
+			float height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - (base/2)*(base/2));
 			float a_triangle = base * height / 2;
 
 			// or like as paper
@@ -257,43 +271,7 @@ int main(){
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
 		
-		/*std::cout << std::endl << "Calculating a_triangles_coord, area to be used as weights..." << std::endl;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
-		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
-			int ti = *ti_iter;
-			
-			int pi = -1;
-			int pip1 = -1;
-			bool isPiAssigned = false;
-			for(int v : faces[ti]){
-				if(v != p0){
-					if(isPiAssigned){
-						pip1 = v; 
-					}else{
-						pi = v;
-						isPiAssigned = true;
-					}
-				}
-			}
-			
-			float scale_pi   = minEdgeLength[p0] / l2norm_diff(vertices[pi],   vertices[p0]);
-			float scale_pip1 = minEdgeLength[p0] / l2norm_diff(vertices[pip1], vertices[p0]);			
-
-			vertex v_p0 = vertices[p0];
-			vertex v_pi = vertices[pi]*scale_pi - v_p0;
-			vertex v_pip1 = vertices[pip1]*scale_pip1 - v_p0;
-
-			// build cross product
-			float x3 = v_pi.y*v_pip1.z - v_pip1.y*v_pi.z;
-			float y3 = v_pi.x*v_pip1.z - v_pip1.x*v_pi.z;
-			float z3 = v_pi.x*v_pip1.y - v_pip1.x*v_pi.y;
-			float a_triangle = sqrt(x3*x3 + y3*y3 + z3*z3) / 2;
-			
-			a_triangles_coord[p0].insert(std::pair<int, float>(ti, a_triangle));
-			std::cout << "a_triangles_coord[" << p0 << "][" << ti << "] " << a_triangles_coord[p0][ti] << std::endl;
-		}*/
-
-
+		
 
 		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
 		float area = 0.0;
@@ -302,8 +280,12 @@ int main(){
 		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
 			int ti = *ti_iter;
 			area += a_triangles_pythag[p0][ti];
-			weighted_area += a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
+			float wa = a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
+			weighted_area += wa;
+			std::cout << "weighted_area[" << p0 << "]" << "[" << ti << "] = " << wa << std::endl;
 		}
+		std::cout << "total area " << area << std::endl;
+		std::cout << "total weighted_area " << weighted_area << std::endl;
 		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
 		wa_geoDisks[p0] = (wa_geoDisk);
 		std::cout << "wa_geoDisks[" << p0 << "] " << wa_geoDisks[p0] << std::endl;
