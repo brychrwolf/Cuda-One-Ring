@@ -1,0 +1,2 @@
+[brychrwolf@MSI Code]$ grep -rnw 'GigaMesh_Source' -e 's1RingSectorPrecomp'
+
