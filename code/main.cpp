@@ -175,12 +175,14 @@ int main(){
 	std::array<std::map<int, float>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
 	std::array<std::map<int, float>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
 	float wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
+	
+	std::array<std::map<int, float>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
 		
 	std::cout << std::endl << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
 
 
-	
+
 		std::cout << std::endl << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 		int minEdgeLength_vertex = -1; // a minimum must exist, error if none is found
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;
@@ -270,8 +272,8 @@ int main(){
 			a_triangles_pythag[p0].insert(std::pair<int, float>(ti, a_triangle));
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
-		
-		
+
+
 
 		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
 		float area = 0.0;
@@ -289,6 +291,17 @@ int main(){
 		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
 		wa_geoDisks[p0] = (wa_geoDisk);
 		std::cout << "wa_geoDisks[" << p0 << "] " << wa_geoDisks[p0] << std::endl;
+		
+		
+
+		std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
+		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
+		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){		
+			int ti = *ti_iter;
+			
+		}
 	}
-	
+	/******************************************************************/
+	std::cout << std::endl << "****** Finished Calculating." << std::endl;
+	/******************************************************************/
 }
