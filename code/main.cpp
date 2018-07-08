@@ -10,6 +10,9 @@
 int P0_BEGIN;
 int P0_END;
 
+// to engage GPUs when instlaled in hybrid system, run as 
+// optirun ./maingit 
+
 typedef std::array<float, 3> vertex;
 typedef std::array<int, 3> face;
 
