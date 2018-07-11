@@ -21,9 +21,33 @@ vertex combine(vertex v1, vertex v2);
 float l2norm(const vertex pi);
 float l2norm_diff(const vertex pi, const vertex p0);
 void printCUDAProps(int devCount);
-void loadMesh_syntheticH(vertex vertices[], float featureVectors[], face faces[]);
+void loadMesh_syntheticH(vertex vertices[], double featureVectors[], face faces[]);
 void printMesh(int numVertices, vertex vertices[], float featureVectors[], int numFaces, face faces[]);
 
+__global__
+void buildLookupTables(int numFaces, face faces[], std::set<int> facesOfVertices[], std::set<int> adjacentVertices[]){
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	int v = index / numFaces;
+	int f = index % numFaces;
+	
+	if(faces[f][0] == v){
+		facesOfVertices[v].insert(f);
+		adjacentVertices[v].insert(faces[f][1]);
+		adjacentVertices[v].insert(faces[f][2]);
+	}			
+	else if(faces[f][1] == v){
+		facesOfVertices[v].insert(f);
+		adjacentVertices[v].insert(faces[f][0]);
+		adjacentVertices[v].insert(faces[f][2]);
+	}			
+	else if(faces[f][2] == v){
+		facesOfVertices[v].insert(f);
+		adjacentVertices[v].insert(faces[f][0]);
+		adjacentVertices[v].insert(faces[f][1]);
+	}
+}
 __global__
 void getMinEdgeLength(int numVertices, vertex cuda_vertices[], int numFaces, face cuda_faces[], int cuda_adjacentVertices[], double cuda_minEdgeLength[]){
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -62,10 +86,14 @@ int main(){
 	std::cout << std::endl << "****** Begin Loading Mesh." << std::endl;
 	/******************************************************************/
 	const int numVertices = 22;
-	vertex vertices[numVertices];
-	float featureVectors[numVertices];
+	vertex *vertices;
+	double *featureVectors;
+	cudaMallocManaged(&vertices, numVertices*sizeof(vertex));
+	cudaMallocManaged(&featureVectors, numVertices*sizeof(double));
+	
 	const int numFaces = 36;
-	face faces[numFaces];
+	face *faces;
+	cudaMallocManaged(&faces, numFaces*sizeof(face));
 	
 	loadMesh_syntheticH(vertices, featureVectors, faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
@@ -85,25 +113,12 @@ int main(){
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
 	std::set<int> adjacentVertices[numVertices] = {};
-	for(int v = P0_BEGIN; v < P0_END; v++){
-		for(int f = 0; f < numFaces; f++){		
-			if(faces[f][0] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][1]);
-				adjacentVertices[v].insert(faces[f][2]);
-			}			
-			else if(faces[f][1] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][0]);
-				adjacentVertices[v].insert(faces[f][2]);
-			}			
-			else if(faces[f][2] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][0]);
-				adjacentVertices[v].insert(faces[f][1]);
-			}
-		}
-	}
+	
+	int numCombos = numFaces * numVertices;
+	int blockSize = 256;
+	int numBlocks = (numCombos + blockSize - 1) / blockSize;
+	buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
+	
 
 	int totalAdjacentVertices = 0;
 	int numAdjacentVertices[numVertices] = {};
@@ -131,21 +146,13 @@ int main(){
 	float wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
 	std::array<std::map<int, float>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
 
-	vertex *cuda_vertices;
-	face *cuda_faces;
 	int *cuda_adjacentVertices;
 	double *cuda_minEdgeLength;
-	cudaMallocManaged(&cuda_vertices, numVertices*sizeof(vertex));
-	cudaMallocManaged(&cuda_faces, numFaces*sizeof(face));
 	cudaMallocManaged(&cuda_adjacentVertices, totalAdjacentVertices*sizeof(int));
 	cudaMallocManaged(&cuda_minEdgeLength, numVertices*sizeof(double));
-	
-	cuda_vertices = vertices;
-	cuda_faces = faces;
-	//cuda_adjacentVertices = adjacentVertices;	
-	
-	int blockSize = 2;
-	int numBlocks = (numVertices + blockSize - 1) / blockSize;
+
+	//int blockSize = 2;
+	//int numBlocks = (numVertices + blockSize - 1) / blockSize;
 	//getMinEdgeLength<<<numBlocks, blockSize>>>(numVertices, cuda_vertices, numFaces, cuda_faces, cuda_adjacentVertices, cuda_minEdgeLength);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 
@@ -325,7 +332,7 @@ void printCUDAProps(int devCount){
 
 void loadMesh_syntheticH(
 	vertex vertices[], 
-	float featureVectors[], 
+	double featureVectors[], 
 	face faces[]
 ){
 	std::cout << "Loading Vertices..." << std::endl;
