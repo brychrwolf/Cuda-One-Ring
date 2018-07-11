@@ -81,36 +81,30 @@ int main(){
 	int P0_BEGIN = 0;
 	int P0_END = numVertices;
 	
-	std::cout << "Calculating lookup table of faces by vertex..." << std::endl;
+	std::cout << "Building table of faces by vertex, " << std::endl;
+	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
-	for(int v = P0_BEGIN; v < P0_END; v++){
-		//std::cout << v << " is a corner of faces: ";
-		for(int f = 0; f < numFaces; f++){			
-			if(faces[f][0] == v || faces[f][1] == v || faces[f][2] == v ){
-				facesOfVertices[v].insert(f);
-		//		std::cout << f << ", ";
-			}
-		}
-		//std::cout << std::endl;
-	}
-	std::cout << "Finding adjacent vertices..." << std::endl;
 	std::set<int> adjacentVertices[numVertices] = {};
 	for(int v = P0_BEGIN; v < P0_END; v++){
-		for(int f : facesOfVertices[v]){
+		for(int f = 0; f < numFaces; f++){		
 			if(faces[f][0] == v){
+				facesOfVertices[v].insert(f);
 				adjacentVertices[v].insert(faces[f][1]);
 				adjacentVertices[v].insert(faces[f][2]);
 			}			
 			else if(faces[f][1] == v){
+				facesOfVertices[v].insert(f);
 				adjacentVertices[v].insert(faces[f][0]);
 				adjacentVertices[v].insert(faces[f][2]);
 			}			
 			else if(faces[f][2] == v){
+				facesOfVertices[v].insert(f);
 				adjacentVertices[v].insert(faces[f][0]);
 				adjacentVertices[v].insert(faces[f][1]);
 			}
-		}	
+		}
 	}
+
 	int totalAdjacentVertices = 0;
 	int numAdjacentVertices[numVertices] = {};
 	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
@@ -119,14 +113,6 @@ int main(){
 		std::cout << "numAdjacentVertices[" << p0 << "] " << numAdjacentVertices[p0] << std::endl;
 	}
 	std::cout << "totalAdjacentVertices " << totalAdjacentVertices << std::endl;
-	
-	/*for(int i = P0_BEGIN; i < P0_END; i++){
-		std::cout << i << " meets ";
-		for(int j : adjacentVertices[i]){
-			std::cout << j << ", ";
-		}
-		std::cout << std::endl;
-	}*/
 	/***********************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
 	/***********************************************************/
