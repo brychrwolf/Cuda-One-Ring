@@ -13,16 +13,17 @@ int P0_END;   // vertices are computed
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
 
-typedef std::array<float, 3> vertex;
+typedef std::array<double, 3> vertex;
 typedef std::array<int, 3> face;
 
-vertex scale(vertex v, float scalar);
+vertex scale(vertex v, double scalar);
 vertex combine(vertex v1, vertex v2);
-float l2norm(const vertex pi);
-float l2norm_diff(const vertex pi, const vertex p0);
+double l2norm(const vertex pi);
+double l2norm_diff(const vertex pi, const vertex p0);
 void printCUDAProps(int devCount);
 void loadMesh_syntheticH(vertex vertices[], double featureVectors[], face faces[]);
-void printMesh(int numVertices, vertex vertices[], float featureVectors[], int numFaces, face faces[]);
+void flattenMesh(int numVertices, vertex vertices[], double flat_vertices[], double featureVectors[], int numFaces, face faces[], int flat_faces[]);
+void printMesh(int numVertices, vertex vertices[], double featureVectors[], int numFaces, face faces[]);
 
 __global__
 void buildLookupTables(int numFaces, face faces[], std::set<int> facesOfVertices[], std::set<int> adjacentVertices[]){
@@ -56,7 +57,7 @@ void getMinEdgeLength(int numVertices, vertex cuda_vertices[], int numFaces, fac
 
 	/*for(pi = 0; pi_iter < cuda_adjacentVertices[p0].size(); pi++){
 		int pi = *pi_iter;
-		float norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
+		double norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
 		if(norm_diff <= minEdgeLength[p0]){
 			minEdgeLength[p0] = norm_diff;
 			minEdgeLength_vertex = pi;
@@ -87,16 +88,21 @@ int main(){
 	/******************************************************************/
 	const int numVertices = 22;
 	vertex *vertices;
+	double *flat_vertices;
 	double *featureVectors;
 	cudaMallocManaged(&vertices, numVertices*sizeof(vertex));
+	cudaMallocManaged(&flat_vertices, 3*numVertices*sizeof(double));
 	cudaMallocManaged(&featureVectors, numVertices*sizeof(double));
 	
 	const int numFaces = 36;
 	face *faces;
+	int *flat_faces;
 	cudaMallocManaged(&faces, numFaces*sizeof(face));
+	cudaMallocManaged(&flat_faces, 3*numFaces*sizeof(int));
 	
 	loadMesh_syntheticH(vertices, featureVectors, faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
+	flattenMesh(numVertices, vertices, flat_vertices, featureVectors, numFaces, faces, flat_faces);
 	/***************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
 	/***************************************************/
@@ -137,14 +143,14 @@ int main(){
 	/******************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/******************************************************************/
-	float minEdgeLength[numVertices];
-	std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max float value
-	std::array<std::map<int, float>, numVertices> f_primes; // function value at delta_min along pi
-	std::array<std::map<int, float>, numVertices> f_triangles; // function value of triangles 
-	std::array<std::map<int, float>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
-	std::array<std::map<int, float>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
-	float wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
-	std::array<std::map<int, float>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
+	double minEdgeLength[numVertices];
+	std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max double value
+	std::array<std::map<int, double>, numVertices> f_primes; // function value at delta_min along pi
+	std::array<std::map<int, double>, numVertices> f_triangles; // function value of triangles 
+	std::array<std::map<int, double>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
+	std::array<std::map<int, double>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
+	double wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
+	std::array<std::map<int, double>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
 
 	int *cuda_adjacentVertices;
 	double *cuda_minEdgeLength;
@@ -166,7 +172,7 @@ int main(){
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;
 		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
 			int pi = *pi_iter;
-			float norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
+			double norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
 			if(norm_diff <= minEdgeLength[p0]){
 				minEdgeLength[p0] = norm_diff;
 				minEdgeLength_vertex = pi;
@@ -181,8 +187,8 @@ int main(){
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
 		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
 			int pi = *pi_iter;
-			float f_prime = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(vertices[pi], vertices[p0]);
-			f_primes[p0].insert(std::pair<int, float>(pi, f_prime));
+			double f_prime = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(vertices[pi], vertices[p0]);
+			f_primes[p0].insert(std::pair<int, double>(pi, f_prime));
 			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
 		}
 
@@ -207,8 +213,8 @@ int main(){
 				}
 			}					
 			
-			float f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1]); //save the /3 for later like in paper
-			f_triangles[p0].insert(std::pair<int, float>(ti, f_triangle));
+			double f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1]); //save the /3 for later like in paper
+			f_triangles[p0].insert(std::pair<int, double>(ti, f_triangle));
 			std::cout << "f_triangles[" << p0 << "][" << ti << "] " << f_triangles[p0][ti] << std::endl;
 		}
 
@@ -242,33 +248,33 @@ int main(){
 			vertex scaled_pip1 = scale(unit_pip1, minEdgeLength[p0]);
 			vertex mel_pip1 = combine(scaled_pip1, vertices[p0]);
 			
-			float base = l2norm_diff(mel_pip1, mel_pi);
-			float height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - (base/2)*(base/2));
-			float a_triangle = base * height / 2;
+			double base = l2norm_diff(mel_pip1, mel_pi);
+			double height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - (base/2)*(base/2));
+			double a_triangle = base * height / 2;
 
 			// or like as paper
-			//float a_triangle = base/4 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - base*base); // multiplying by 4 inside the sqrt countered by dividing by 2 outside
+			//double a_triangle = base/4 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - base*base); // multiplying by 4 inside the sqrt countered by dividing by 2 outside
 
-			a_triangles_pythag[p0].insert(std::pair<int, float>(ti, a_triangle));
+			a_triangles_pythag[p0].insert(std::pair<int, double>(ti, a_triangle));
 			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
 		}
 
 
 
 		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
-		float area = 0.0;
-		float weighted_area = 0.0;
+		double area = 0.0;
+		double weighted_area = 0.0;
 		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
 		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
 			int ti = *ti_iter;
 			area += a_triangles_pythag[p0][ti];
-			float wa = a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
+			double wa = a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
 			weighted_area += wa;
 			std::cout << "weighted_area[" << p0 << "]" << "[" << ti << "] = " << wa << std::endl;
 		}
 		std::cout << "total area " << area << std::endl;
 		std::cout << "total weighted_area " << weighted_area << std::endl;
-		float wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
+		double wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
 		wa_geoDisks[p0] = (wa_geoDisk);
 		std::cout << "wa_geoDisks[" << p0 << "] " << wa_geoDisks[p0] << std::endl;
 		
@@ -288,7 +294,7 @@ int main(){
 
 
 
-vertex scale(vertex v, float scalar){
+vertex scale(vertex v, double scalar){
 	return {v[0]*scalar,
 			v[1]*scalar, 
 			v[2]*scalar};
@@ -300,13 +306,13 @@ vertex combine(vertex v1, vertex v2){
 			v1[2] + v2[2]};
 }
 
-float l2norm(const vertex pi){
+double l2norm(const vertex pi){
 	return sqrt(pi[0]*pi[0]
 			  + pi[1]*pi[1]
 			  + pi[2]*pi[2]);
 }
 
-float l2norm_diff(const vertex pi, const vertex p0){
+double l2norm_diff(const vertex pi, const vertex p0){
 	return sqrt((pi[0] - p0[0])*(pi[0] - p0[0])
 			  + (pi[1] - p0[1])*(pi[1] - p0[1])
 			  + (pi[2] - p0[2])*(pi[2] - p0[2]));
@@ -363,7 +369,7 @@ void loadMesh_syntheticH(
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<> dis(-1.0, 1.0);
-	float featureVectors[numVertices] = {};
+	double featureVectors[numVertices] = {};
 	for(int i = 0; i < numVertices; i++){
 		featureVectors[i] = dis(gen);
 		std::cout << "featureVector [" << i << "] = " << featureVectors[i] << std::endl;
@@ -432,10 +438,31 @@ void loadMesh_syntheticH(
 	faces[35] = { 6, 15, 14};
 }
 
+void flattenMesh(
+	int numVertices, 
+	vertex vertices[],
+	double flat_vertices[],
+	double featureVectors[],
+	int numFaces, 
+	face faces[],
+	int flat_faces[]
+){
+	for(int v = 0; v < numVertices; v++){
+		flat_vertices[(v*3)+0] = vertices[v][0];
+		flat_vertices[(v*3)+1] = vertices[v][1];
+		flat_vertices[(v*3)+2] = vertices[v][2];
+	}
+	for(int f = 0; f < numFaces; f++){
+		flat_faces[(f*3)+0] = faces[f][0];
+		flat_faces[(f*3)+1] = faces[f][1];
+		flat_faces[(f*3)+2] = faces[f][2];
+	}
+}
+
 void printMesh(
 	int numVertices, 
 	vertex vertices[], 
-	float featureVectors[], 
+	double featureVectors[], 
 	int numFaces, 
 	face faces[]
 ){
