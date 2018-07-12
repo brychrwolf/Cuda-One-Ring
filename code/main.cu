@@ -26,44 +26,28 @@ void flattenMesh(int numVertices, vertex vertices[], double flat_vertices[], dou
 void printMesh(int numVertices, vertex vertices[], double featureVectors[], int numFaces, face faces[]);
 
 __global__
-void buildLookupTables(int numFaces, face faces[], std::set<int> facesOfVertices[], std::set<int> adjacentVertices[]){
+void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int* adjacentVertices){
+	//int index = blockIdx.x * blockDim.x + threadIdx.x;
+	//int stride = blockDim.x * gridDim.x;
+
+	//int v = index / numFaces;
+	//int f = index % numFaces;
+}
+
+__global__
+void getMinEdgeLength(int numVertices, int* flat_vertices, int numFaces, int* flat_faces, int* adjacentVertices, double* minEdgeLength){
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
 	int v = index / numFaces;
 	int f = index % numFaces;
 	
-	if(faces[f][0] == v){
-		facesOfVertices[v].insert(f);
-		adjacentVertices[v].insert(faces[f][1]);
-		adjacentVertices[v].insert(faces[f][2]);
-	}			
-	else if(faces[f][1] == v){
-		facesOfVertices[v].insert(f);
-		adjacentVertices[v].insert(faces[f][0]);
-		adjacentVertices[v].insert(faces[f][2]);
-	}			
-	else if(faces[f][2] == v){
-		facesOfVertices[v].insert(f);
-		adjacentVertices[v].insert(faces[f][0]);
-		adjacentVertices[v].insert(faces[f][1]);
-	}
-}
-__global__
-void getMinEdgeLength(int numVertices, vertex cuda_vertices[], int numFaces, face cuda_faces[], int cuda_adjacentVertices[], double cuda_minEdgeLength[]){
-	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	int stride = blockDim.x * gridDim.x;
-
-
-	/*for(pi = 0; pi_iter < cuda_adjacentVertices[p0].size(); pi++){
-		int pi = *pi_iter;
-		double norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
-		if(norm_diff <= minEdgeLength[p0]){
-			minEdgeLength[p0] = norm_diff;
-			minEdgeLength_vertex = pi;
-		}
-		std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
-	}*/
+	//double norm_diff = l2norm_diff(flat_vertices[pi], flat_vertices[p0]); 
+	//if(norm_diff <= minEdgeLength[p0]){
+	//	minEdgeLength[p0] = norm_diff;
+	//	minEdgeLength_vertex = pi;
+	//}
+	//std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
 }
 
 int main(){
@@ -120,19 +104,45 @@ int main(){
 	std::set<int> facesOfVertices[numVertices] = {};
 	std::set<int> adjacentVertices[numVertices] = {};
 	
-	int numCombos = numFaces * numVertices;
-	int blockSize = 256;
-	int numBlocks = (numCombos + blockSize - 1) / blockSize;
-	buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
-	
+	//int numCombos = numFaces * numVertices;
+	//int blockSize = 256;
+	//int numBlocks = (numCombos + blockSize - 1) / blockSize;
+	//buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
 
+	std::cout << "Iterating over each vertex as v..." << std::endl;
+	for(int v = P0_BEGIN; v < P0_END; v++){
+		std::cout << "Iterating over each face as f..." << std::endl;
+		for(int f = 0; f < numFaces; f++){
+			if(faces[f][0] == v){
+				facesOfVertices[v].insert(f);
+				adjacentVertices[v].insert(faces[f][1]);
+				adjacentVertices[v].insert(faces[f][2]);
+			}			
+			else if(faces[f][1] == v){
+				facesOfVertices[v].insert(f);
+				adjacentVertices[v].insert(faces[f][0]);
+				adjacentVertices[v].insert(faces[f][2]);
+			}			
+			else if(faces[f][2] == v){
+				facesOfVertices[v].insert(f);
+				adjacentVertices[v].insert(faces[f][0]);
+				adjacentVertices[v].insert(faces[f][1]);
+			}
+		}
+	}
+	
+	int maxAdjacentVertices = 0;
 	int totalAdjacentVertices = 0;
 	int numAdjacentVertices[numVertices] = {};
 	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
-		numAdjacentVertices[p0] = adjacentVertices[p0].size();
-		totalAdjacentVertices += adjacentVertices[p0].size();
+		int s = adjacentVertices[p0].size();
+		if(s > maxAdjacentVertices) 
+			maxAdjacentVertices = s;
+		numAdjacentVertices[p0] = s;
+		totalAdjacentVertices += s;
 		std::cout << "numAdjacentVertices[" << p0 << "] " << numAdjacentVertices[p0] << std::endl;
 	}
+	std::cout << "maxAdjacentVertices " << maxAdjacentVertices << std::endl;
 	std::cout << "totalAdjacentVertices " << totalAdjacentVertices << std::endl;
 	/***********************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
@@ -157,14 +167,13 @@ int main(){
 	cudaMallocManaged(&cuda_adjacentVertices, totalAdjacentVertices*sizeof(int));
 	cudaMallocManaged(&cuda_minEdgeLength, numVertices*sizeof(double));
 
-	//int blockSize = 2;
-	//int numBlocks = (numVertices + blockSize - 1) / blockSize;
-	//getMinEdgeLength<<<numBlocks, blockSize>>>(numVertices, cuda_vertices, numFaces, cuda_faces, cuda_adjacentVertices, cuda_minEdgeLength);
+	int blockSize = 4;
+	int numBlocks = (numVertices + blockSize - 1) / blockSize;
+	//getMinEdgeLength<<<numBlocks, blockSize>>>(numVertices, flat_vertices, numFaces, flat_faces, adjacentVertices, minEdgeLength);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 
 	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
-
 
 
 		/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
