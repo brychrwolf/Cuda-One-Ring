@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include <set>
 #include <cmath>
@@ -6,9 +7,6 @@
 #include <array>
 #include <vector>
 #include <map>
-
-int P0_BEGIN; // to modify the loop over which 
-int P0_END;   // vertices are computed 
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
@@ -35,19 +33,39 @@ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int*
 }
 
 __global__
-void getMinEdgeLength(int numVertices, int* flat_vertices, int numFaces, int* flat_faces, int* adjacentVertices, double* minEdgeLength){
-	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	int stride = blockDim.x * gridDim.x;
+void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* minEdgeLength){//, double* flat_vertices){
+	int blockIndex = blockIdx.x; //0-2
+	int local_threadIndex = threadIdx.x; //0-31
+	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
+	int stride = blockDim.x * gridDim.x; //32*3 = 96
 
-	int v = index / numFaces;
-	int f = index % numFaces;
+	// Use all availble threads to do all numVertices
+	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
+		//called 118 times, = runLength[numVertices]
+		//what is v for 100?
+		//this: 
+		//	pros, smaller memory, 
+		//	cons, need this loop to determine v!
+		//alternatively: save v as a second value per index of flat_adjacentVertices
+		//	pros, v is known
+		//	cons flat_adjacentVertices doubles in size
+		for(int v = 0; v < numVertices; v++){
+			if(av < adjacentVertices_runLength[v]){
+				int p0 = v;
+				int pi = flat_adjacentVertices[av];
+				//printf("[%d, %d, %d, %d]:", blockIndex, local_threadIndex, global_threadIndex, av);
+				printf("[%d]:\t\tp0 %d\tpi %d\n", av, p0, pi);
+				break;
+			}
+		}
+	}
 	
-	//double norm_diff = l2norm_diff(flat_vertices[pi], flat_vertices[p0]); 
-	//if(norm_diff <= minEdgeLength[p0]){
-	//	minEdgeLength[p0] = norm_diff;
-	//	minEdgeLength_vertex = pi;
-	//}
-	//std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
+	//double l2normDiff = sqrt((flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])*(flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])
+	//					   + (flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])*(flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])
+	//					   + (flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2])*(flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+2]));
+	
+	//if(minEdgeLength[p0] <= 0 || l2normDiff <= minEdgeLength[p0])
+	//	minEdgeLength[p0] = l2normDiff;
 }
 
 int main(){
@@ -62,7 +80,7 @@ int main(){
 	else
 		printCUDAProps(devCount);
 	/******************************************************************/
-	std::cout << "****** CUDA Initialized (if available)." << std::endl;
+	std::cout << "****** CUDA Initialized." << std::endl;
 	/******************************************************************/
 
 
@@ -96,9 +114,6 @@ int main(){
 	/***********************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/***********************************************************************/
-	int P0_BEGIN = 0;
-	int P0_END = numVertices;
-	
 	std::cout << "Building table of faces by vertex, " << std::endl;
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
@@ -110,8 +125,8 @@ int main(){
 	//buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
 
 	std::cout << "Iterating over each vertex as v..." << std::endl;
-	for(int v = P0_BEGIN; v < P0_END; v++){
-		std::cout << "Iterating over each face as f..." << std::endl;
+	std::cout << "as well as Iterating over each face as f..." << std::endl;
+	for(int v = 0; v < numVertices; v++){
 		for(int f = 0; f < numFaces; f++){
 			if(faces[f][0] == v){
 				facesOfVertices[v].insert(f);
@@ -131,19 +146,30 @@ int main(){
 		}
 	}
 	
-	int maxAdjacentVertices = 0;
-	int totalAdjacentVertices = 0;
-	int numAdjacentVertices[numVertices] = {};
-	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
-		int s = adjacentVertices[p0].size();
-		if(s > maxAdjacentVertices) 
-			maxAdjacentVertices = s;
-		numAdjacentVertices[p0] = s;
-		totalAdjacentVertices += s;
-		std::cout << "numAdjacentVertices[" << p0 << "] " << numAdjacentVertices[p0] << std::endl;
+	// Determine runlengths of adjacentVertices
+	int* adjacentVertices_runLength;
+	cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int));
+	std::cout << "Iterating over each vertex as p0..." << std::endl;
+	adjacentVertices_runLength[0] = adjacentVertices[0].size();
+	std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
+	for(int p0 = 0+1; p0 < numVertices; p0++){
+		adjacentVertices_runLength[p0] = adjacentVertices_runLength[p0-1] + adjacentVertices[p0].size();
+		std::cout << "adjacentVertices_runLength[" << p0 << "] " << adjacentVertices_runLength[p0] << std::endl;
 	}
-	std::cout << "maxAdjacentVertices " << maxAdjacentVertices << std::endl;
-	std::cout << "totalAdjacentVertices " << totalAdjacentVertices << std::endl;
+	
+	// Flatten adjacentVerticies
+	int numAdjacentVertices = adjacentVertices_runLength[numVertices-1];
+	int* flat_adjacentVertices;
+	cudaMallocManaged(&flat_adjacentVertices, numAdjacentVertices*sizeof(int));
+	int r = 0;
+	for(int p0 = 0; p0 < numVertices; p0++){
+		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
+			int pi = *pi_iter;
+			flat_adjacentVertices[r] = pi;
+			std::cout << "flat_adjacentVertices[" << r << "] " << flat_adjacentVertices[r] << std::endl;
+			r++;
+		}		
+	}
 	/***********************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
 	/***********************************************************/
@@ -153,27 +179,26 @@ int main(){
 	/******************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/******************************************************************/
-	double minEdgeLength[numVertices];
-	std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max double value
-	std::array<std::map<int, double>, numVertices> f_primes; // function value at delta_min along pi
-	std::array<std::map<int, double>, numVertices> f_triangles; // function value of triangles 
-	std::array<std::map<int, double>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
-	std::array<std::map<int, double>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
-	double wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
-	std::array<std::map<int, double>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
+	//double minEdgeLength[numVertices];
+	//std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max double value
+	//std::array<std::map<int, double>, numVertices> f_primes; // function value at delta_min along pi
+	//std::array<std::map<int, double>, numVertices> f_triangles; // function value of triangles 
+	//std::array<std::map<int, double>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
+	//std::array<std::map<int, double>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
+	//double wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
+	//std::array<std::map<int, double>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
 
-	int *cuda_adjacentVertices;
-	double *cuda_minEdgeLength;
-	cudaMallocManaged(&cuda_adjacentVertices, totalAdjacentVertices*sizeof(int));
-	cudaMallocManaged(&cuda_minEdgeLength, numVertices*sizeof(double));
+	double* minEdgeLength;
+	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
 
-	int blockSize = 4;
-	int numBlocks = (numVertices + blockSize - 1) / blockSize;
-	//getMinEdgeLength<<<numBlocks, blockSize>>>(numVertices, flat_vertices, numFaces, flat_faces, adjacentVertices, minEdgeLength);
+	int blockSize = 32;
+	int numBlocks = numAdjacentVertices / blockSize;
+	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, minEdgeLength);//, flat_vertices);
+
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 
 	std::cout << "Iterating over each vertex as p0..." << std::endl;
-	for(int p0 = P0_BEGIN; p0 < P0_END; p0++){
+	for(int p0 = 0; p0 < numVertices; p0++){
 
 
 		/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
@@ -187,9 +212,9 @@ int main(){
 				minEdgeLength_vertex = pi;
 			}
 			std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
-		}
-		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;
-		std::cout << "cuda_minEdgeLength[" << p0 << "] " << cuda_minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;*/
+		}*/
+		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
+		/*std::cout << "cuda_minEdgeLength[" << p0 << "] " << cuda_minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;*/
 
 
 		/*std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
