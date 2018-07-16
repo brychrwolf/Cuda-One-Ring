@@ -27,7 +27,7 @@ void printMesh(int numVertices, vertex vertices[], double featureVectors[], int 
 __global__ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int* adjacentVertices);
 __global__ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths);
 __device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices);
-
+__global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength);
 
 int main(){
 	/***************************************************************/
@@ -140,7 +140,8 @@ int main(){
 	double* edgeLengths;
 	cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
-	numBlocks = numAdjacentVertices / blockSize;
+	numBlocks = max(1, numAdjacentVertices / blockSize);
+	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
 	getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, flat_vertices, edgeLengths);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 	/***********************************************************/
@@ -161,29 +162,29 @@ int main(){
 	//double wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
 	//std::array<std::map<int, double>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
 
-	//double* minEdgeLength;
-	//cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
-	//getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, flat_vertices, minEdgeLength);
-
-	//cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
+	double* minEdgeLength;
+	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
+	//blockSize = 32;
+	//numBlocks = max(1, numAdjacentVertices / blockSize);
+	//std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	//getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	//cudaDeviceSynchronize();
 
 	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0; p0 < numVertices; p0++){
 
 
-		/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
-		int minEdgeLength_vertex = -1; // a minimum must exist, error if none is found
-		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;
-		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
-			int pi = *pi_iter;
-			double norm_diff = l2norm_diff(vertices[pi], vertices[p0]); //TODO: used twice, for p0 and when p1 becomes p0. Would saving value make a big difference?
-			if(norm_diff <= minEdgeLength[p0]){
-				minEdgeLength[p0] = norm_diff;
-				minEdgeLength_vertex = pi;
+		std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
+		std::cout << "Iterating over p0's adjacentVertices as av..." << std::endl;
+		
+		int av_begin = (p0 == 0 ? 0 : adjacentVertices_runLength[p0-1]);
+		for(int av = av_begin; av < adjacentVertices_runLength[p0]; av++){
+			if(minEdgeLength[p0] <= 0 || edgeLengths[av] <= minEdgeLength[p0]){
+				minEdgeLength[p0] = edgeLengths[av];
 			}
-			std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
-		}*/
-		//std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
+			std::cout  << "p0 " << p0 << " edgeLengths[" << av << "] " << edgeLengths[av] << std::endl;
+		}
+		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
 		/*std::cout << "cuda_minEdgeLength[" << p0 << "] " << cuda_minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;*/
 
 
@@ -533,3 +534,27 @@ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices){
 					   + (flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])*(flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])
 					   + (flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2])*(flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2]));
 }
+
+__global__
+void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength){
+	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	int stride = blockDim.x * gridDim.x;
+	int p0 = 0;
+	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
+		double edgeLength = edgeLengths[av];
+		int p0;
+		for(int v = 0; v < numVertices; v++){
+			if(av < adjacentVertices_runLength[v]){
+				p0 = v;
+				break;
+			}
+		}
+		
+		//__threadfence_system();
+		int test;
+		atomicMin(&test, global_threadIndex);
+		//printf("minEdgeLength[%d]\t%g\n", p0, minEdgeLength[p0]);
+		printf("test[%d]\n", test);
+	}
+}
+
