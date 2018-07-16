@@ -26,7 +26,8 @@ void printMesh(int numVertices, vertex vertices[], double featureVectors[], int 
 
 __global__ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int* adjacentVertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* minEdgeLength);
-__device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices);
+__device__ void cuda_l2norm_diff(int pi, int p0, double* flat_vertices, double& l2n_d);
+
 
 int main(){
 	/***************************************************************/
@@ -111,10 +112,10 @@ int main(){
 	cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int));
 	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	adjacentVertices_runLength[0] = adjacentVertices[0].size();
-	std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
+	//std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
 	for(int p0 = 0+1; p0 < numVertices; p0++){
 		adjacentVertices_runLength[p0] = adjacentVertices_runLength[p0-1] + adjacentVertices[p0].size();
-		std::cout << "adjacentVertices_runLength[" << p0 << "] " << adjacentVertices_runLength[p0] << std::endl;
+		//std::cout << "adjacentVertices_runLength[" << p0 << "] " << adjacentVertices_runLength[p0] << std::endl;
 	}
 	
 	// Flatten adjacentVerticies
@@ -173,7 +174,7 @@ int main(){
 			}
 			std::cout  << "p0 " << p0 << " pi " << pi << " norm_diff " << norm_diff << std::endl;
 		}*/
-		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
+//std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
 		/*std::cout << "cuda_minEdgeLength[" << p0 << "] " << cuda_minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;*/
 
 
@@ -327,6 +328,8 @@ void printCUDAProps(int devCount){
     	printf("Number of multiprocessors:     %d\n",  devProp.multiProcessorCount);
     	printf("Clock rate:                    %d\n",  devProp.clockRate);
     	printf("Total constant memory:         %u\n",  devProp.totalConstMem);
+		printf("CUDA Capability Major/Minor version number:    %d.%d\n", devProp.major, devProp.minor);
+
 	}
 }
 
@@ -491,6 +494,8 @@ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* flat_adjace
 	int local_threadIndex = threadIdx.x; //0-31
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
+	
+	double l2n_d;
 
 	// Use all availble threads to do all numVertices
 	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
@@ -506,18 +511,20 @@ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* flat_adjace
 				//printf("[%d, %d, %d, %d]:", blockIndex, local_threadIndex, global_threadIndex, av);
 				int p0 = v;
 				int pi = flat_adjacentVertices[av];
-				double l2n_d = cuda_l2norm_diff(pi, p0, flat_vertices);
+				//cuda_l2norm_diff(pi, p0, flat_vertices, l2n_d);
 
-				/*int p0_x = flat_vertices[(p0*3)+0];
+				int p0_x = flat_vertices[(p0*3)+0];
 				int p0_y = flat_vertices[(p0*3)+1];
 				int p0_z = flat_vertices[(p0*3)+2];
 				int pi_x = flat_vertices[(pi*3)+0];
 				int pi_y = flat_vertices[(pi*3)+1];
 				int pi_z = flat_vertices[(pi*3)+2];
-				printf("[%d]:\tp0 %d {%d, %d, %d}\n\tpi %d {%d, %d, %d}\n\tl2n_d %d\n", av,\
+				l2n_d = __dsqrt_rn((double) p0_x*p0_x);
+				printf("p0_x %d p0_x^2 %d sqrt(p0_x^2) %d\n", p0_x, p0_x*p0_x, __dsqrt_rn((double) p0_x*p0_x));
+ 				//printf("[%d]:\tp0 %d {%d, %d, %d}\n\tpi %d {%d, %d, %d}\n\tl2n_d %d\n", av,\
 					p0, p0_x, p0_y, p0_z,\
 					pi, pi_x, pi_y, pi_z,\
-					l2n_d);*/
+					l2n_d);
 				break;
 			}
 		}
@@ -526,7 +533,7 @@ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* flat_adjace
 	//	minEdgeLength[p0] = l2normDiff;
 }
 
-__device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices){
+__device__ void cuda_l2norm_diff(int pi, int p0, double* flat_vertices, double& l2n_d){
 //	double l2n_d = sqrt((double) (flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])*(flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])
 //					  + (flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])*(flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])
 //					  + (flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2])*(flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2]));
@@ -543,16 +550,16 @@ __device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices){
 					  + (pi_z - p0_z)*(pi_z - p0_z));
 		*/			  
 
-	double a = 1.9;
-	printf("l2nd_d: %d\n", 1.9);
+	l2n_d = (double) p0;
+	//printf("l2nd_d: %d\n", (double) 1.9);
 
 
-	/*printf("p0 %d {%d, %d, %d}\npi %d {%d, %d, %d}\n\tl2n_d %d\n",\
-		p0, p0_x, p0_y, p0_z,\
-		pi, pi_x, pi_y, pi_z,\
-		l2n_d);
-*/
+	//printf("p0 %d {%d, %d, %d}\npi %d {%d, %d, %d}\n\tl2n_d %d\n",\
+	//	p0, p0_x, p0_y, p0_z,\
+	//	pi, pi_x, pi_y, pi_z,\
+	//	l2n_d);
+
 	//return (double) l2n_d;
-	return 1.9;
+	//return (double) 1.9;
 }
 
