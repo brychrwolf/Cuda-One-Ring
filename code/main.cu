@@ -164,29 +164,27 @@ int main(){
 
 	double* minEdgeLength;
 	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
-	//blockSize = 32;
-	//numBlocks = max(1, numAdjacentVertices / blockSize);
-	//std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
-	//getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
-	//cudaDeviceSynchronize();
+	blockSize = 8;
+	numBlocks = max(1, numVertices / blockSize);
+	std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	cudaDeviceSynchronize();
 
 	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0; p0 < numVertices; p0++){
 
 
-		std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
+
+		/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 		std::cout << "Iterating over p0's adjacentVertices as av..." << std::endl;
-		
 		int av_begin = (p0 == 0 ? 0 : adjacentVertices_runLength[p0-1]);
 		for(int av = av_begin; av < adjacentVertices_runLength[p0]; av++){
 			if(minEdgeLength[p0] <= 0 || edgeLengths[av] <= minEdgeLength[p0]){
 				minEdgeLength[p0] = edgeLengths[av];
 			}
-			std::cout  << "p0 " << p0 << " edgeLengths[" << av << "] " << edgeLengths[av] << std::endl;
+			//std::cout  << "p0 " << p0 << " edgeLengths[" << av << "] " << edgeLengths[av] << std::endl;
 		}
-		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;
-		/*std::cout << "cuda_minEdgeLength[" << p0 << "] " << cuda_minEdgeLength[p0] << " minEdgeLength_vertex " << minEdgeLength_vertex << std::endl;*/
-
+		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;*/
 
 		/*std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
 		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
@@ -539,22 +537,15 @@ __global__
 void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	int stride = blockDim.x * gridDim.x;
-	int p0 = 0;
-	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
-		double edgeLength = edgeLengths[av];
-		int p0;
-		for(int v = 0; v < numVertices; v++){
-			if(av < adjacentVertices_runLength[v]){
-				p0 = v;
-				break;
+	// Use all availble threads to do all numVertices as p0
+	for(int p0 = global_threadIndex; p0 < numVertices; p0 += stride){
+		int av_begin = (p0 == 0 ? 0 : adjacentVertices_runLength[p0-1]);
+		for(int av = av_begin; av < adjacentVertices_runLength[p0]; av++){
+			if(minEdgeLength[p0] <= 0 || edgeLengths[av] <= minEdgeLength[p0]){
+				minEdgeLength[p0] = edgeLengths[av];
 			}
 		}
-		
-		//__threadfence_system();
-		int test;
-		atomicMin(&test, global_threadIndex);
-		//printf("minEdgeLength[%d]\t%g\n", p0, minEdgeLength[p0]);
-		printf("test[%d]\n", test);
+		printf("minEdgeLength[%d] %f\n", p0, minEdgeLength[p0]);
 	}
 }
 
