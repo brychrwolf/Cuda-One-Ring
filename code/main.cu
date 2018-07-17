@@ -29,6 +29,7 @@ __global__ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* fl
 __device__ int getP0FromAdjacentVertex(int numVertices, int av, int* adjacentVertices_runLength);
 __device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength);
+__global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* flat_vertices, double* f_primes);
 
 int main(){
 	/***************************************************************/
@@ -177,8 +178,8 @@ int main(){
 	cudaMallocManaged(&f_primes, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
 	numBlocks = max(1, numAdjacentVertices / blockSize);
-	//std::cout << "getFPrimes<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
-	//getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	std::cout << "getFPrimes<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, featureVectors, minEdgeLength, flat_vertices, f_primes);
 	cudaDeviceSynchronize();
 	
 			
@@ -569,36 +570,15 @@ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVer
 	}
 }
 
-/*__global__
-void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths){
+__global__
+void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* flat_vertices, double* f_primes){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
 	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
 		int pi = flat_adjacentVertices[av];
-		//TODO: measure performance	
-		//this: 
-		//	pros, smaller memory, 
-		//	cons, need this loop to determine p0! (do intelligent search instead)
-		//alternatively: save p0 as a second value per index of flat_adjacentVertices
-		//	pros, p0 is always known
-		//	cons flat_adjacentVertices doubles in size
-		int p0;
-		for(int v = 0; v < numVertices; v++){
-			if(av < adjacentVertices_runLength[v]){
-				//printf("[%d, %d, %d, %d]:", blockIndex, local_threadIndex, global_threadIndex, av);
-				p0 = v;
-				break;
-			}
-		}
-		edgeLengths[av] = cuda_l2norm_diff(pi, p0, flat_vertices);
-		//printf("edgeLength[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, edgeLengths[av]);
+		int p0 = getP0FromAdjacentVertex(numVertices, av, adjacentVertices_runLength);
+		f_primes[av] = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / cuda_l2norm_diff(pi, p0, flat_vertices);
+		printf("f_primes[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, f_primes[av]);
 	}
 }
-
-			f_primes[p0] = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / cuda_l2norm_diff(pi, p0, flat_vertices);
-			
-		}
-		printf("f_primes[%d] %f\n", p0, f_primes[p0]);
-	}
-}*/
 
