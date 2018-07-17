@@ -486,7 +486,7 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 
 	double accuFuncVals = 0.0;
 	double accuArea = 0.0;
-	
+
 	// Use all availble threads to do all numVertices as v0
 	for(int v0 = global_threadIndex; v0 < numVertices; v0 += stride){
 		int fi_begin = (v0 == 0 ? 0 : facesOfVertices_runLength[v0-1]);
@@ -496,7 +496,7 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 				int vi, vip1;
 				getViAndVip1FromV0andFi(v0, flat_facesOfVertices[fi], flat_faces, vi, vip1);
 				printf("[%d]\t[%d]\t%d\t%d\n", v0, flat_facesOfVertices[fi], vi, vip1);
-				
+
 				double alpha = edgeLengths[]
 				/*
 					// Fetch angle
@@ -506,7 +506,7 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 						double lengthEdgeB = getLengthCA();
 						double lengthEdgeC = getLengthAB();
 						alpha = acos( ( lengthEdgeB*lengthEdgeB + lengthEdgeC*lengthEdgeC - lengthEdgeA*lengthEdgeA ) / ( 2*lengthEdgeB*lengthEdgeC ) );
-	
+
 					// Area - https://en.wikipedia.org/wiki/Circular_sector#Area
 					r1RingSecPre.mSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
 
@@ -529,7 +529,7 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 					// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
 					r1RingSecPre.mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
 
-				
+
 				// Fetch function values
 				double funcValCenter;
 				double funcValA;
@@ -548,13 +548,13 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 				// Pass thru
 				rSectorArea = oneRingSecPre.mSectorArea;
 				return( true );
-				
+
 			double currFuncVal = 1.2;
 			double currArea = 2;
 			accuFuncVals += currFuncVal * currArea;
 			accuArea += currArea;*/
 		}
-		
+
 		//circleSectors[v0] = accuFuncVals / accuArea;
 		//printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
 	}
