@@ -16,8 +16,8 @@ typedef std::array<int, 3> face;
 
 vertex scale(vertex v, double scalar);
 vertex combine(vertex v1, vertex v2);
-double l2norm(const vertex pi);
-double l2norm_diff(const vertex pi, const vertex p0);
+double l2norm(const vertex vi);
+double l2norm_diff(const vertex vi, const vertex v0);
 
 void printCUDAProps(int devCount);
 void loadMesh_syntheticH(vertex vertices[], double featureVectors[], face faces[]);
@@ -26,10 +26,12 @@ void printMesh(int numVertices, vertex vertices[], double featureVectors[], int 
 
 __global__ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int* adjacentVertices);
 __global__ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths);
-__device__ int getP0FromAdjacentVertex(int numVertices, int av, int* adjacentVertices_runLength);
-__device__ double cuda_l2norm_diff(int pi, int p0, double* flat_vertices);
+__device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength);
+__device__ double cuda_l2norm_diff(int vi, int v0, double* flat_vertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength);
 __global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* flat_vertices, double* f_primes);
+__global__ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat_facesOfVertices, int* flat_faces, double* edgeLengths);
+__device__ void getViAndVip1FromV0andFi(int v0, int fi, int* flat_faces, int& vi, int& vip1);
 
 int main(){
 	/***************************************************************/
@@ -122,12 +124,12 @@ int main(){
 	facesOfVertices_runLength[0]  = facesOfVertices[0].size();
 	//std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
 	//std::cout << "facesOfVertices_runLength[" << 0 << "] " << facesOfVertices_runLength[0] << std::endl;
-	std::cout << "Iterating over each vertex as p0..." << std::endl;
-	for(int p0 = 0+1; p0 < numVertices; p0++){
-		adjacentVertices_runLength[p0] = adjacentVertices_runLength[p0-1] + adjacentVertices[p0].size();
-		facesOfVertices_runLength[p0]  = facesOfVertices_runLength[p0-1]  + facesOfVertices[p0].size();
-		//std::cout << "adjacentVertices_runLength[" << p0 << "] " << adjacentVertices_runLength[p0] << std::endl;
-		//std::cout << "facesOfVertices_runLength[" << p0 << "] " << facesOfVertices_runLength[p0] << std::endl;
+	std::cout << "Iterating over each vertex as v0..." << std::endl;
+	for(int v0 = 0+1; v0 < numVertices; v0++){
+		adjacentVertices_runLength[v0] = adjacentVertices_runLength[v0-1] + adjacentVertices[v0].size();
+		facesOfVertices_runLength[v0]  = facesOfVertices_runLength[v0-1]  + facesOfVertices[v0].size();
+		//std::cout << "adjacentVertices_runLength[" << v0 << "] " << adjacentVertices_runLength[v0] << std::endl;
+		//std::cout << "facesOfVertices_runLength[" << v0 << "] " << facesOfVertices_runLength[v0] << std::endl;
 	}
 	
 	// Flatten adjacentVerticies and facesOfVertices
@@ -139,17 +141,17 @@ int main(){
 	cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int));
 	int r = 0;
 	int s = 0;
-	std::cout << "Iterating over each vertex as p0..." << std::endl;
-	for(int p0 = 0; p0 < numVertices; p0++){
-		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
-			int pi = *pi_iter;
-			flat_adjacentVertices[r] = pi;
+	std::cout << "Iterating over each vertex as v0..." << std::endl;
+	for(int v0 = 0; v0 < numVertices; v0++){
+		for(std::set<int>::iterator vi_iter = adjacentVertices[v0].begin(); vi_iter != adjacentVertices[v0].end(); vi_iter++){
+			int vi = *vi_iter;
+			flat_adjacentVertices[r] = vi;
 			//std::cout << "flat_adjacentVertices[" << r << "] " << flat_adjacentVertices[r] << std::endl;
 			r++;
 		}
-		for(std::set<int>::iterator pi_iter = facesOfVertices[p0].begin(); pi_iter != facesOfVertices[p0].end(); pi_iter++){
-			int pi = *pi_iter;
-			flat_facesOfVertices[s] = pi;
+		for(std::set<int>::iterator vi_iter = facesOfVertices[v0].begin(); vi_iter != facesOfVertices[v0].end(); vi_iter++){
+			int vi = *vi_iter;
+			flat_facesOfVertices[s] = vi;
 			//std::cout << "flat_facesOfVertices[" << s << "] " << flat_facesOfVertices[s] << std::endl;
 			s++;
 		}
@@ -160,7 +162,7 @@ int main(){
 	cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
 	numBlocks = max(1, numAdjacentVertices / blockSize);
-	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(" << numAdjacentVertices << ")" << std::endl;
 	getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, flat_vertices, edgeLengths);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 	/***********************************************************/
@@ -172,21 +174,12 @@ int main(){
 	/******************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/******************************************************************/
-	//double minEdgeLength[numVertices];
-	//std::fill_n(minEdgeLength, numVertices, FLT_MAX); // initialize array to max double value
-	//std::array<std::map<int, double>, numVertices> f_primes; // function value at delta_min along pi
-	//std::array<std::map<int, double>, numVertices> f_triangles; // function value of triangles 
-	//std::array<std::map<int, double>, numVertices> a_triangles_pythag; // area of geodesic triangles to be used as weights
-	//std::array<std::map<int, double>, numVertices> a_triangles_coord; // area of geodesic triangles to be used as weights
-	//double wa_geoDisks[numVertices] = {}; // weighted area of triangles comprising total geodiseic disk
-	//std::array<std::map<int, double>, numVertices> circle_sectors; //! Computes a circle sector and a mean function value of the corresponding prism at the center of gravity.
-
 	std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 	double* minEdgeLength;
 	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
 	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
-	std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
 	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
 	cudaDeviceSynchronize();
 
@@ -195,141 +188,19 @@ int main(){
 	cudaMallocManaged(&f_primes, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
 	numBlocks = max(1, numAdjacentVertices / blockSize);
-	std::cout << "getFPrimes<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+	std::cout << "getFPrimes<<<" << numBlocks << ", " << blockSize << ">>(" << numAdjacentVertices << ")" << std::endl;
 	getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, featureVectors, minEdgeLength, flat_vertices, f_primes);
 	cudaDeviceSynchronize();
 	
 	std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
 	double* circleSectors;
-	cudaMallocManaged(&circleSectors, numAdjacentVertices*sizeof(double));
-	blockSize = 32;
+	cudaMallocManaged(&circleSectors, numVertices*sizeof(double));
+	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
-	std::cout << "getCircleSectors<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
-//	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	std::cout << "getCircleSectors<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
+//	getMinEdgeLength(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	getCircleSectors<<<numBlocks, blockSize>>>(numVertices, facesOfVertices_runLength, flat_facesOfVertices, flat_faces, edgeLengths);
 	cudaDeviceSynchronize();
-
-	
-
-	/*std::cout << "Iterating over each vertex as p0..." << std::endl;
-	for(int p0 = 0; p0 < numVertices; p0++){
-
-
-
-		/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
-		std::cout << "Iterating over p0's adjacentVertices as av..." << std::endl;
-		int av_begin = (p0 == 0 ? 0 : adjacentVertices_runLength[p0-1]);
-		for(int av = av_begin; av < adjacentVertices_runLength[p0]; av++){
-			if(minEdgeLength[p0] <= 0 || edgeLengths[av] <= minEdgeLength[p0]){
-				minEdgeLength[p0] = edgeLengths[av];
-			}
-			//std::cout  << "p0 " << p0 << " edgeLengths[" << av << "] " << edgeLengths[av] << std::endl;
-		}
-		std::cout << "minEdgeLength[" << p0 << "] " << minEdgeLength[p0] << std::endl;*/
-
-		/*std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
-		std::cout << "Iterating over each adjacent_vertex as pi..." << std::endl;		
-		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
-			int pi = *pi_iter;
-			double f_prime = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / l2norm_diff(vertices[pi], vertices[p0]);
-			f_primes[p0].insert(std::pair<int, double>(pi, f_prime));
-			std::cout << "f_primes[" << p0 << "][" << pi << "] " << f_primes[p0][pi] << std::endl;
-		}
-
-
-		
-		std::cout << std::endl << "Calculating f_triangles, weighted mean (f0 + f'i + f'ip1)/3..." << std::endl;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
-		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
-			int ti = *ti_iter;
-			
-			int pi;
-			int pip1;
-			bool isPiAsigned = false;
-			for(int v : faces[ti]){ // for each vertex in this face (a, b, c)
-				if(v != p0){ // exclude p0
-					if(!isPiAsigned){
-						pip1 = v; // assign the other corner to pip1
-					}else{
-						pi = v; // assign the first corner to pi
-						isPiAsigned = true;
-					}
-				}
-			}					
-			
-			double f_triangle = (featureVectors[p0] + f_primes[p0][pi] + f_primes[p0][pip1]); //save the /3 for later like in paper
-			f_triangles[p0].insert(std::pair<int, double>(ti, f_triangle));
-			std::cout << "f_triangles[" << p0 << "][" << ti << "] " << f_triangles[p0][ti] << std::endl;
-		}
-
-
-		
-		std::cout << std::endl << "Calculating a_triangles_pythag, area to be used as weights..." << std::endl;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;		
-		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
-			int ti = *ti_iter;
-			
-			int pi, pip1;
-			bool isPiAssigned = false;
-			for(int v : faces[ti]){ // for each vertex in this face (a, b, c)
-				if(v != p0){ // exclude p0
-					if(isPiAssigned){
-						pip1 = v; // assign the other corner to pip1
-					}else{
-						pi = v; // assign the first corner to pi
-						isPiAssigned = true;
-					}
-				}
-			}
-
-			vertex relative_pi = combine(vertices[pi],   scale(vertices[p0], -1));
-			vertex unit_pi = scale(relative_pi, 1/l2norm(relative_pi));
-			vertex scaled_pi = scale(unit_pi, minEdgeLength[p0]);
-			vertex mel_pi = combine(scaled_pi, vertices[p0]);
-			
-			vertex relative_pip1 = combine(vertices[pip1],   scale(vertices[p0], -1));
-			vertex unit_pip1 = scale(relative_pip1, 1/l2norm(relative_pip1));
-			vertex scaled_pip1 = scale(unit_pip1, minEdgeLength[p0]);
-			vertex mel_pip1 = combine(scaled_pip1, vertices[p0]);
-			
-			double base = l2norm_diff(mel_pip1, mel_pi);
-			double height = sqrt(minEdgeLength[p0]*minEdgeLength[p0] - (base/2)*(base/2));
-			double a_triangle = base * height / 2;
-
-			// or like as paper
-			//double a_triangle = base/4 * sqrt(4*minEdgeLength[p0]*minEdgeLength[p0] - base*base); // multiplying by 4 inside the sqrt countered by dividing by 2 outside
-
-			a_triangles_pythag[p0].insert(std::pair<int, double>(ti, a_triangle));
-			std::cout << "a_triangles_pythag[" << p0 << "][" << ti << "] " << a_triangles_pythag[p0][ti] << std::endl;
-		}
-
-
-
-		std::cout << std::endl << "Calculating a_geoDisks, weighted mean function value over total area of adjacent triangles..." << std::endl;
-		double area = 0.0;
-		double weighted_area = 0.0;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
-		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){
-			int ti = *ti_iter;
-			area += a_triangles_pythag[p0][ti];
-			double wa = a_triangles_pythag[p0][ti] * f_triangles[p0][ti];
-			weighted_area += wa;
-			std::cout << "weighted_area[" << p0 << "]" << "[" << ti << "] = " << wa << std::endl;
-		}
-		std::cout << "total area " << area << std::endl;
-		std::cout << "total weighted_area " << weighted_area << std::endl;
-		double wa_geoDisk = weighted_area / (3 * area); // /3 was carried over from from the f_triangles calculations
-		wa_geoDisks[p0] = (wa_geoDisk);
-		std::cout << "wa_geoDisks[" << p0 << "] " << wa_geoDisks[p0] << std::endl;
-		
-		
-
-		std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
-		std::cout << "Iterating over each facesOfVertices as ti..." << std::endl;
-		for(std::set<int>::iterator ti_iter = facesOfVertices[p0].begin(); ti_iter != facesOfVertices[p0].end(); ti_iter++){		
-			int ti = *ti_iter;
-			
-		}*/
-	//}
 	/******************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/******************************************************************/
@@ -349,16 +220,16 @@ vertex combine(vertex v1, vertex v2){
 			v1[2] + v2[2]};
 }
 
-double l2norm(const vertex pi){
-	return sqrt(pi[0]*pi[0]
-			  + pi[1]*pi[1]
-			  + pi[2]*pi[2]);
+double l2norm(const vertex vi){
+	return sqrt(vi[0]*vi[0]
+			  + vi[1]*vi[1]
+			  + vi[2]*vi[2]);
 }
 
-double l2norm_diff(const vertex pi, const vertex p0){
-	return sqrt((pi[0] - p0[0])*(pi[0] - p0[0])
-			  + (pi[1] - p0[1])*(pi[1] - p0[1])
-			  + (pi[2] - p0[2])*(pi[2] - p0[2]));
+double l2norm_diff(const vertex vi, const vertex v0){
+	return sqrt((vi[0] - v0[0])*(vi[0] - v0[0])
+			  + (vi[1] - v0[1])*(vi[1] - v0[1])
+			  + (vi[2] - v0[2])*(vi[2] - v0[2]));
 }
 
 void printCUDAProps(int devCount){
@@ -496,12 +367,13 @@ void flattenMesh(
 		flat_vertices[(v*3)+0] = vertices[v][0];
 		flat_vertices[(v*3)+1] = vertices[v][1];
 		flat_vertices[(v*3)+2] = vertices[v][2];
-		//std::cout << "flat_vertices[" << v << "*3+{0,1,2}] {" << flat_vertices[(v*3)+0] << ", " << flat_vertices[(v*3)+1] << ", " << flat_vertices[(v*3)+1] << "}" << std::endl;
+		//std::cout << "flat_vertices[" << v << "*3+{0,1,2}] {" << flat_vertices[(v*3)+0] << ", " << flat_vertices[(v*3)+1] << ", " << flat_vertices[(v*3)+2] << "}" << std::endl;
 	}
 	for(int f = 0; f < numFaces; f++){
 		flat_faces[(f*3)+0] = faces[f][0];
 		flat_faces[(f*3)+1] = faces[f][1];
 		flat_faces[(f*3)+2] = faces[f][2];
+		std::cout << "flat_faces[" << f << "*3+{0,1,2}] {" << flat_faces[(f*3)+0] << ", " << flat_faces[(f*3)+1] << ", " << flat_faces[(f*3)+2] << "}" << std::endl;
 	}
 }
 
@@ -545,53 +417,53 @@ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacent
 
 	// Use all availble threads to do all numAdjacentVertices
 	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
-		int pi = flat_adjacentVertices[av];
-		int p0 = getP0FromAdjacentVertex(numVertices, av, adjacentVertices_runLength);
-		edgeLengths[av] = cuda_l2norm_diff(pi, p0, flat_vertices);
-		//printf("edgeLength[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, edgeLengths[av]);
+		int vi = flat_adjacentVertices[av];
+		int v0 = getV0FromRunLength(numVertices, av, adjacentVertices_runLength);
+		edgeLengths[av] = cuda_l2norm_diff(vi, v0, flat_vertices);
+		//printf("edgeLength[%d]\t(v0 %d, vi %d)\t%g\n", av, v0, vi, edgeLengths[av]);
 	}
 }
 
 __device__
-int getP0FromAdjacentVertex(int numVertices, int av, int* adjacentVertices_runLength){
+int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength){
 	//TODO: measure performance	
 	//this: 
 	//	pros, smaller memory, 
-	//	cons, need this loop to determine p0! (do intelligent search instead)
-	//alternatively: save p0 as a second value per index of flat_adjacentVertices
-	//	pros, p0 is always known
+	//	cons, need this loop to determine v0! (do intelligent search instead)
+	//alternatively: save v0 as a second value per index of flat_adjacentVertices
+	//	pros, v0 is always known
 	//	cons flat_adjacentVertices doubles in size
-	int p0;
+	int v0;
 	for(int v = 0; v < numVertices; v++){
 		if(av < adjacentVertices_runLength[v]){
 			//printf("[%d, %d, %d, %d]:", blockIndex, local_threadIndex, global_threadIndex, av);
-			p0 = v;
+			v0 = v;
 			break;
 		}
 	}
-	return p0;
+	return v0;
 }
 
 __device__
-double cuda_l2norm_diff(int pi, int p0, double* flat_vertices){
-	return sqrt((double) (flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])*(flat_vertices[(pi*3)+0] - flat_vertices[(p0*3)+0])
-					   + (flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])*(flat_vertices[(pi*3)+1] - flat_vertices[(p0*3)+1])
-					   + (flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2])*(flat_vertices[(pi*3)+2] - flat_vertices[(p0*3)+2]));
+double cuda_l2norm_diff(int vi, int v0, double* flat_vertices){
+	return sqrt((double) (flat_vertices[(vi*3)+0] - flat_vertices[(v0*3)+0])*(flat_vertices[(vi*3)+0] - flat_vertices[(v0*3)+0])
+					   + (flat_vertices[(vi*3)+1] - flat_vertices[(v0*3)+1])*(flat_vertices[(vi*3)+1] - flat_vertices[(v0*3)+1])
+					   + (flat_vertices[(vi*3)+2] - flat_vertices[(v0*3)+2])*(flat_vertices[(vi*3)+2] - flat_vertices[(v0*3)+2]));
 }
 
 __global__
 void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	int stride = blockDim.x * gridDim.x;
-	// Use all availble threads to do all numVertices as p0
-	for(int p0 = global_threadIndex; p0 < numVertices; p0 += stride){
-		int av_begin = (p0 == 0 ? 0 : adjacentVertices_runLength[p0-1]);
-		for(int av = av_begin; av < adjacentVertices_runLength[p0]; av++){
-			if(minEdgeLength[p0] <= 0 || edgeLengths[av] <= minEdgeLength[p0]){
-				minEdgeLength[p0] = edgeLengths[av];
+	// Use all availble threads to do all numVertices as v0
+	for(int v0 = global_threadIndex; v0 < numVertices; v0 += stride){
+		int av_begin = (v0 == 0 ? 0 : adjacentVertices_runLength[v0-1]);
+		for(int av = av_begin; av < adjacentVertices_runLength[v0]; av++){
+			if(minEdgeLength[v0] <= 0 || edgeLengths[av] <= minEdgeLength[v0]){
+				minEdgeLength[v0] = edgeLengths[av];
 			}
 		}
-		//printf("minEdgeLength[%d] %f\n", p0, minEdgeLength[p0]);
+		//printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
 	}
 }
 
@@ -600,10 +472,109 @@ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVert
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
 	for(int av = global_threadIndex; av < numAdjacentVertices; av += stride){
-		int pi = flat_adjacentVertices[av];
-		int p0 = getP0FromAdjacentVertex(numVertices, av, adjacentVertices_runLength);
-		f_primes[av] = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / cuda_l2norm_diff(pi, p0, flat_vertices);
-		//printf("f_primes[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, f_primes[av]);
+		int vi = flat_adjacentVertices[av];
+		int v0 = getV0FromRunLength(numVertices, av, adjacentVertices_runLength);
+		f_primes[av] = featureVectors[v0] + minEdgeLength[v0] * (featureVectors[vi] - featureVectors[v0]) / cuda_l2norm_diff(vi, v0, flat_vertices);
+		//printf("f_primes[%d]\t(v0 %d, vi %d)\t%g\n", av, v0, vi, f_primes[av]);
 	}
 }
+
+__global__
+void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat_facesOfVertices, int* flat_faces, double* edgeLengths){
+	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
+	int stride = blockDim.x * gridDim.x; //32*3 = 96
+
+	double accuFuncVals = 0.0;
+	double accuArea = 0.0;
+	
+	// Use all availble threads to do all numVertices as v0
+	for(int v0 = global_threadIndex; v0 < numVertices; v0 += stride){
+		int fi_begin = (v0 == 0 ? 0 : facesOfVertices_runLength[v0-1]);
+		for(int fi = fi_begin; fi < facesOfVertices_runLength[v0]; fi++){
+			//currFace->getFuncVal1RingSector( this, rMinDist, currArea, currFuncVal ); //ORS.307
+				//get1RingSectorConst();
+				int vi, vip1;
+				getViAndVip1FromV0andFi(v0, flat_facesOfVertices[fi], flat_faces, vi, vip1);
+				printf("[%d]\t[%d]\t%d\t%d\n", v0, flat_facesOfVertices[fi], vi, vip1);
+				
+				double alpha = edgeLengths[]
+				/*
+					// Fetch angle
+					double alpha = getAngleAtVertex( rVert1RingCenter );
+						double alpha;
+						double lengthEdgeA = getLengthBC();
+						double lengthEdgeB = getLengthCA();
+						double lengthEdgeC = getLengthAB();
+						alpha = acos( ( lengthEdgeB*lengthEdgeB + lengthEdgeC*lengthEdgeC - lengthEdgeA*lengthEdgeA ) / ( 2*lengthEdgeB*lengthEdgeC ) );
+	
+					// Area - https://en.wikipedia.org/wiki/Circular_sector#Area
+					r1RingSecPre.mSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
+
+					// Truncated prism - function value equals the height
+					if( !getOposingVertices( rVert1RingCenter, r1RingSecPre.mVertOppA, r1RingSecPre.mVertOppB ) ) {
+					cerr << "[Face::" << __FUNCTION__ << "] ERROR: Finding opposing vertices!" << endl;
+					return( false );
+					}
+
+					// Function values interpolated f'_i and f'_{i+1}
+					// Compute the third angle using alpha/2.0 and 90°:
+					double beta = ( M_PI - alpha ) / 2.0;
+					// Law of sines
+					double diameterCircum = rNormDist / sin( beta ); // Constant ratio equal longest edge
+					// Distances for interpolation
+					double lenCenterToA = distance( rVert1RingCenter, r1RingSecPre.mVertOppA );
+					double lenCenterToB = distance( rVert1RingCenter, r1RingSecPre.mVertOppB );
+					r1RingSecPre.mRatioCA = diameterCircum / lenCenterToA;
+					r1RingSecPre.mRatioCB = diameterCircum / lenCenterToB;
+					// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
+					r1RingSecPre.mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
+
+				
+				// Fetch function values
+				double funcValCenter;
+				double funcValA;
+				double funcValB;
+				rVert1RingCenter->getFuncValue( &funcValCenter );
+				oneRingSecPre.mVertOppA->getFuncValue( &funcValA );
+				oneRingSecPre.mVertOppB->getFuncValue( &funcValB );
+
+				// Interpolate
+				double funcValInterpolA = funcValCenter*(1.0-oneRingSecPre.mRatioCA) + funcValA*oneRingSecPre.mRatioCA;
+				double funcValInterpolB = funcValCenter*(1.0-oneRingSecPre.mRatioCB) + funcValB*oneRingSecPre.mRatioCB;
+
+				// Compute average function value at the center of gravity of the circle sector
+				rSectorFuncVal = funcValCenter*( 1.0 - oneRingSecPre.mCenterOfGravityDist ) +
+								 ( funcValInterpolA + funcValInterpolB ) * oneRingSecPre.mCenterOfGravityDist / 2.0;
+				// Pass thru
+				rSectorArea = oneRingSecPre.mSectorArea;
+				return( true );
+				
+			double currFuncVal = 1.2;
+			double currArea = 2;
+			accuFuncVals += currFuncVal * currArea;
+			accuArea += currArea;*/
+		}
+		
+		//circleSectors[v0] = accuFuncVals / accuArea;
+		//printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
+	}
+}
+
+__device__
+void getViAndVip1FromV0andFi(int v0, int fi, int* flat_faces, int& vi, int& vip1){
+	//printf("flat_faces[%d*3+{0,1,2}] {%d, %d, %d}\n", fi, flat_faces[(fi*3)+0], flat_faces[(fi*3)+1], flat_faces[(fi*3)+2]);
+	bool isViAssigned = false;
+	for(int i = 0; i < 3; i++){ // for each vertex in this face (a, b, c)
+		int v = flat_faces[fi*3+i];
+		if(v != v0){ // exclude v0
+			if(isViAssigned){
+				vip1 = v; // assign the other corner to vip1
+			}else{
+				vi = v; // assign the first corner to vi
+				isViAssigned = true;
+			}
+		}
+	}
+}
+
 
