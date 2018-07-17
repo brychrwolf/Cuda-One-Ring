@@ -113,29 +113,46 @@ int main(){
 		}
 	}
 	
-	// Determine runlengths of adjacentVertices
+	// Determine runlengths of adjacentVertices and facesofVertices
 	int* adjacentVertices_runLength;
+	int* facesOfVertices_runLength;
 	cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int));
-	std::cout << "Iterating over each vertex as p0..." << std::endl;
+	cudaMallocManaged(&facesOfVertices_runLength,  numVertices*sizeof(int));
 	adjacentVertices_runLength[0] = adjacentVertices[0].size();
+	facesOfVertices_runLength[0]  = facesOfVertices[0].size();
 	//std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
+	//std::cout << "facesOfVertices_runLength[" << 0 << "] " << facesOfVertices_runLength[0] << std::endl;
+	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0+1; p0 < numVertices; p0++){
 		adjacentVertices_runLength[p0] = adjacentVertices_runLength[p0-1] + adjacentVertices[p0].size();
+		facesOfVertices_runLength[p0]  = facesOfVertices_runLength[p0-1]  + facesOfVertices[p0].size();
 		//std::cout << "adjacentVertices_runLength[" << p0 << "] " << adjacentVertices_runLength[p0] << std::endl;
+		//std::cout << "facesOfVertices_runLength[" << p0 << "] " << facesOfVertices_runLength[p0] << std::endl;
 	}
 	
-	// Flatten adjacentVerticies
+	// Flatten adjacentVerticies and facesOfVertices
 	int numAdjacentVertices = adjacentVertices_runLength[numVertices-1];
+	int numFacesOfVertices  = facesOfVertices_runLength[numVertices-1];
 	int* flat_adjacentVertices;
+	int* flat_facesOfVertices;
 	cudaMallocManaged(&flat_adjacentVertices, numAdjacentVertices*sizeof(int));
+	cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int));
 	int r = 0;
+	int s = 0;
+	std::cout << "Iterating over each vertex as p0..." << std::endl;
 	for(int p0 = 0; p0 < numVertices; p0++){
 		for(std::set<int>::iterator pi_iter = adjacentVertices[p0].begin(); pi_iter != adjacentVertices[p0].end(); pi_iter++){
 			int pi = *pi_iter;
 			flat_adjacentVertices[r] = pi;
 			//std::cout << "flat_adjacentVertices[" << r << "] " << flat_adjacentVertices[r] << std::endl;
 			r++;
-		}		
+		}
+		for(std::set<int>::iterator pi_iter = facesOfVertices[p0].begin(); pi_iter != facesOfVertices[p0].end(); pi_iter++){
+			int pi = *pi_iter;
+			flat_facesOfVertices[s] = pi;
+			//std::cout << "flat_facesOfVertices[" << s << "] " << flat_facesOfVertices[s] << std::endl;
+			s++;
+		}
 	}
 	
 	// Precalculate Edge Lengths
@@ -182,7 +199,15 @@ int main(){
 	getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, featureVectors, minEdgeLength, flat_vertices, f_primes);
 	cudaDeviceSynchronize();
 	
-			
+	std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
+	double* circleSectors;
+	cudaMallocManaged(&circleSectors, numAdjacentVertices*sizeof(double));
+	blockSize = 32;
+	numBlocks = max(1, numVertices / blockSize);
+	std::cout << "getCircleSectors<<<" << numBlocks << ", " << blockSize <<">>(...)" << std::endl;
+//	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
+	cudaDeviceSynchronize();
+
 	
 
 	/*std::cout << "Iterating over each vertex as p0..." << std::endl;
@@ -523,7 +548,7 @@ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacent
 		int pi = flat_adjacentVertices[av];
 		int p0 = getP0FromAdjacentVertex(numVertices, av, adjacentVertices_runLength);
 		edgeLengths[av] = cuda_l2norm_diff(pi, p0, flat_vertices);
-		printf("edgeLength[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, edgeLengths[av]);
+		//printf("edgeLength[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, edgeLengths[av]);
 	}
 }
 
@@ -578,7 +603,7 @@ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVert
 		int pi = flat_adjacentVertices[av];
 		int p0 = getP0FromAdjacentVertex(numVertices, av, adjacentVertices_runLength);
 		f_primes[av] = featureVectors[p0] + minEdgeLength[p0] * (featureVectors[pi] - featureVectors[p0]) / cuda_l2norm_diff(pi, p0, flat_vertices);
-		printf("f_primes[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, f_primes[av]);
+		//printf("f_primes[%d]\t(p0 %d, pi %d)\t%g\n", av, p0, pi, f_primes[av]);
 	}
 }
 
