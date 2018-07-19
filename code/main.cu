@@ -30,8 +30,20 @@ __device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices
 __device__ double cuda_l2norm_diff(int vi, int v0, double* flat_vertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths, double* minEdgeLength);
 __global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* flat_vertices, double* f_primes);
-__global__ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat_facesOfVertices, int* flat_faces, double* edgeLengths);
+__global__ void getCircleSectors(
+	int numVertices, 
+	int* adjacentVertices_runLength,
+	int* facesOfVertices_runLength, 
+	int* flat_facesOfVertices, 
+	int* flat_adjacentVertices,
+	int* flat_faces, 
+	double* minEdgeLength, 
+	double* featureVectors, 
+	double* edgeLengths,
+	double* circleSectors
+);
 __device__ void getViAndVip1FromV0andFi(int v0, int fi, int* flat_faces, int& vi, int& vip1);
+__device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
 
 int main(){
 	/***************************************************************/
@@ -198,8 +210,18 @@ int main(){
 	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
 	std::cout << "getCircleSectors<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
-//	getMinEdgeLength(numAdjacentVertices, numVertices, adjacentVertices_runLength, flat_vertices, edgeLengths, minEdgeLength);
-	getCircleSectors<<<numBlocks, blockSize>>>(numVertices, facesOfVertices_runLength, flat_facesOfVertices, flat_faces, edgeLengths);
+	getCircleSectors<<<numBlocks, blockSize>>>(
+		numVertices, 
+		adjacentVertices_runLength, 
+		facesOfVertices_runLength, 
+		flat_facesOfVertices, 
+		flat_adjacentVertices, 
+		flat_faces, 
+		minEdgeLength, 
+		featureVectors, 
+		edgeLengths, 
+		circleSectors
+	);
 	cudaDeviceSynchronize();
 	/******************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
@@ -410,8 +432,15 @@ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int*
 
 __global__
 void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths){
-	//int blockIndex = blockIdx.x; //0-2
-	//int local_threadIndex = threadIdx.x; //0-31
+	//TODO Optimization analysis: storage vs speed
+	//this:
+	//	flat_adjacentVertices = 6nV
+	//	adjacentVertices_runLength = 1nV
+	//	index search requires averagePairCount per Vertex (6nV)
+	//fully indexed:
+	//	flat_adjacentVertices = 3*6nV (can be halved if redundant AVs are not stored)
+	//	no runLength required
+	//	no index search time
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
 
@@ -480,7 +509,18 @@ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVert
 }
 
 __global__
-void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat_facesOfVertices, int* flat_faces, double* edgeLengths){
+void getCircleSectors(
+	int numVertices, 
+	int* adjacentVertices_runLength,
+	int* facesOfVertices_runLength, 
+	int* flat_facesOfVertices, 
+	int* flat_adjacentVertices,
+	int* flat_faces, 
+	double* minEdgeLength, 
+	double* featureVectors, 
+	double* edgeLengths,
+	double* circleSectors
+){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
 
@@ -495,68 +535,58 @@ void getCircleSectors(int numVertices, int* facesOfVertices_runLength, int* flat
 				//get1RingSectorConst();
 				int vi, vip1;
 				getViAndVip1FromV0andFi(v0, flat_facesOfVertices[fi], flat_faces, vi, vip1);
-				printf("[%d]\t[%d]\t%d\t%d\n", v0, flat_facesOfVertices[fi], vi, vip1);
+				//printf("[%d]\t[%d]\t%d\t%d\n", v0, flat_facesOfVertices[fi], vi, vip1);
 
-				double alpha = edgeLengths[]
-				/*
-					// Fetch angle
-					double alpha = getAngleAtVertex( rVert1RingCenter );
-						double alpha;
-						double lengthEdgeA = getLengthBC();
-						double lengthEdgeB = getLengthCA();
-						double lengthEdgeC = getLengthAB();
-						alpha = acos( ( lengthEdgeB*lengthEdgeB + lengthEdgeC*lengthEdgeC - lengthEdgeA*lengthEdgeA ) / ( 2*lengthEdgeB*lengthEdgeC ) );
+				//TODO: Ensure edges A, B, C are correct with v0, vi, vip1; also regarding funcVals later
+				//ORS.456
+				double lengthEdgeA = getEdgeLengthOfV0AndVi(vi, vip1, adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double lengthEdgeB = getEdgeLengthOfV0AndVi(v0, vip1, adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double lengthEdgeC = getEdgeLengthOfV0AndVi(v0, vi,   adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double alpha = acos( ( lengthEdgeB*lengthEdgeB + lengthEdgeC*lengthEdgeC - lengthEdgeA*lengthEdgeA ) / ( 2*lengthEdgeB*lengthEdgeC ) );
 
-					// Area - https://en.wikipedia.org/wiki/Circular_sector#Area
-					r1RingSecPre.mSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
+				double rNormDist = minEdgeLength[v0];
+				double lenCenterToA = lengthEdgeC;
+				double lenCenterToB = lengthEdgeB;
+			
+				//ORS.403 Area - https://en.wikipedia.org/wiki/Circular_sector#Area
+				//*changed from m to r to skip "passthrough" see ORS.372
+				double rSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
 
-					// Truncated prism - function value equals the height
-					if( !getOposingVertices( rVert1RingCenter, r1RingSecPre.mVertOppA, r1RingSecPre.mVertOppB ) ) {
-					cerr << "[Face::" << __FUNCTION__ << "] ERROR: Finding opposing vertices!" << endl;
-					return( false );
-					}
+				//ORS.412 Function values interpolated f'_i and f'_{i+1}
+				// Compute the third angle using alpha/2.0 and 90°:
+				double beta = ( M_PI - alpha ) / 2.0;
+				// Law of sines
+				double diameterCircum = rNormDist / sin( beta ); // Constant ratio equal longest edge
 
-					// Function values interpolated f'_i and f'_{i+1}
-					// Compute the third angle using alpha/2.0 and 90°:
-					double beta = ( M_PI - alpha ) / 2.0;
-					// Law of sines
-					double diameterCircum = rNormDist / sin( beta ); // Constant ratio equal longest edge
-					// Distances for interpolation
-					double lenCenterToA = distance( rVert1RingCenter, r1RingSecPre.mVertOppA );
-					double lenCenterToB = distance( rVert1RingCenter, r1RingSecPre.mVertOppB );
-					r1RingSecPre.mRatioCA = diameterCircum / lenCenterToA;
-					r1RingSecPre.mRatioCB = diameterCircum / lenCenterToB;
-					// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
-					r1RingSecPre.mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
+				//ORS.420 Distances for interpolation
+				double mRatioCA = diameterCircum / lenCenterToA;
+				double mRatioCB = diameterCircum / lenCenterToB;
+				// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
+				double mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
 
+				//ORS.357 Fetch function values
+				double funcValCenter = featureVectors[v0];
+				double funcValA = featureVectors[vi];
+				double funcValB = featureVectors[vip1];
 
-				// Fetch function values
-				double funcValCenter;
-				double funcValA;
-				double funcValB;
-				rVert1RingCenter->getFuncValue( &funcValCenter );
-				oneRingSecPre.mVertOppA->getFuncValue( &funcValA );
-				oneRingSecPre.mVertOppB->getFuncValue( &funcValB );
+				//ORS.365 Interpolate
+				double funcValInterpolA = funcValCenter*(1.0-mRatioCA) + funcValA*mRatioCA;
+				double funcValInterpolB = funcValCenter*(1.0-mRatioCB) + funcValB*mRatioCB;
 
-				// Interpolate
-				double funcValInterpolA = funcValCenter*(1.0-oneRingSecPre.mRatioCA) + funcValA*oneRingSecPre.mRatioCA;
-				double funcValInterpolB = funcValCenter*(1.0-oneRingSecPre.mRatioCB) + funcValB*oneRingSecPre.mRatioCB;
+				//ORS.369 Compute average function value at the center of gravity of the circle sector
+				double rSectorFuncVal = funcValCenter*( 1.0 - mCenterOfGravityDist ) +
+								 ( funcValInterpolA + funcValInterpolB ) * mCenterOfGravityDist / 2.0;
 
-				// Compute average function value at the center of gravity of the circle sector
-				rSectorFuncVal = funcValCenter*( 1.0 - oneRingSecPre.mCenterOfGravityDist ) +
-								 ( funcValInterpolA + funcValInterpolB ) * oneRingSecPre.mCenterOfGravityDist / 2.0;
-				// Pass thru
-				rSectorArea = oneRingSecPre.mSectorArea;
-				return( true );
-
-			double currFuncVal = 1.2;
-			double currArea = 2;
+			double currFuncVal = rSectorFuncVal;
+			double currArea = rSectorArea;
+			
+			//ORS.309
 			accuFuncVals += currFuncVal * currArea;
-			accuArea += currArea;*/
+			accuArea += currArea;
 		}
 
-		//circleSectors[v0] = accuFuncVals / accuArea;
-		//printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
+		circleSectors[v0] = accuFuncVals / accuArea;
+		printf("circleSectors[%d] %f\n", v0, circleSectors[v0]);
 	}
 }
 
@@ -575,6 +605,21 @@ void getViAndVip1FromV0andFi(int v0, int fi, int* flat_faces, int& vi, int& vip1
 			}
 		}
 	}
+}
+
+
+__device__
+double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths){
+	//TODO: Error handling?
+	int av_begin = (v0 == 0 ? 0 : adjacentVertices_runLength[v0-1]);
+	double edgeLength;
+	for(int av = av_begin; av < adjacentVertices_runLength[v0]; av++){
+		if(flat_adjacentVertices[av] == vi){
+			edgeLength = edgeLengths[av];
+			break;
+		}
+	}
+	return edgeLength;
 }
 
 
