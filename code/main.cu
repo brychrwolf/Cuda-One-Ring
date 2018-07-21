@@ -313,7 +313,12 @@ void loadMesh_syntheticH(
 		std::cout << "featureVector [" << i << "] = " << featureVectors[i] << std::endl;
 	}*/
 	
-	std::cout << "Loading Feature Vectors..." << std::endl;
+	std::cout << "Loading Feature Vectors as all 1..." << std::endl;
+	for(int i = 0; i < 22; i++){
+		featureVectors[i] = 1;
+	}
+	
+	/*std::cout << "Loading Feature Vectors..." << std::endl;
 	featureVectors[0]  = -0.373397;
 	featureVectors[1]  =  0.645161;
 	featureVectors[2]  =  0.797587;
@@ -335,7 +340,7 @@ void loadMesh_syntheticH(
 	featureVectors[18] =  0.582556;
 	featureVectors[19] =  0.272700;
 	featureVectors[20] = -0.692900;
-	featureVectors[21] =  0.405410;
+	featureVectors[21] =  0.405410;*/
 	
 	std::cout << "Loading Faces..." << std::endl;
 	faces[0]  = { 0,  1,  8};
