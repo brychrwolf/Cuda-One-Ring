@@ -46,9 +46,9 @@ __device__ void getViAndVip1FromV0andFi(int v0, int fi, int* flat_faces, int& vi
 __device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
 
 int main(){
-	/***************************************************************/
-	std::cout << std::endl << "****** Initialize CUDA." << std::endl;
-	/***************************************************************/
+	/*************************************************************************/
+	std::cout << std::endl << "****** Initializing CUDA..." << std::endl;
+	/*************************************************************************/
 	int devCount;
 	cudaGetDeviceCount(&devCount);
 	printf("CUDA Device Query...\n");
@@ -58,15 +58,15 @@ int main(){
 		printCUDAProps(devCount);
 	int blockSize;
 	int numBlocks;
-	/******************************************************************/
+	/*************************************************************************/
 	std::cout << "****** CUDA Initialized." << std::endl;
-	/******************************************************************/
+	/*************************************************************************/
 
 
 
-	/******************************************************************/
-	std::cout << std::endl << "****** Begin Loading Mesh." << std::endl;
-	/******************************************************************/
+	/*************************************************************************/
+	std::cout << std::endl << "****** Loading Mesh..." << std::endl;
+	/*************************************************************************/
 	const int numVertices = 22;
 	vertex *vertices;
 	double *flat_vertices;
@@ -84,15 +84,15 @@ int main(){
 	loadMesh_syntheticH(vertices, featureVectors, faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	flattenMesh(numVertices, vertices, flat_vertices, featureVectors, numFaces, faces, flat_faces);
-	/***************************************************/
+	/*************************************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
-	/***************************************************/
+	/*************************************************************************/
 
 
 	
-	/***********************************************************************/
+	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
-	/***********************************************************************/
+	/*************************************************************************/
 	std::cout << "Building table of faces by vertex, " << std::endl;
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
@@ -177,15 +177,15 @@ int main(){
 	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(" << numAdjacentVertices << ")" << std::endl;
 	getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, flat_vertices, edgeLengths);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
-	/***********************************************************/
+	/*************************************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
-	/***********************************************************/
+	/*************************************************************************/
 
 
 
-	/******************************************************************/
+	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
-	/******************************************************************/
+	/*************************************************************************/
 	std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 	double* minEdgeLength;
 	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
@@ -223,9 +223,9 @@ int main(){
 		circleSectors
 	);
 	cudaDeviceSynchronize();
-	/******************************************************************/
+	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
-	/******************************************************************/
+	/*************************************************************************/
 }
 
 
