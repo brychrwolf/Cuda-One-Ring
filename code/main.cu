@@ -38,7 +38,7 @@ __device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices
 __device__ double cuda_l2norm_diff(int vi, int v0, double* vertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
 //__global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* vertices, double* f_primes);
-__global__ void getCircleSectors(
+__global__ void getOneRingMeanFunctionValues(
 	int numVertices, 
 	int* adjacentVertices_runLength,
 	int* facesOfVertices_runLength, 
@@ -48,7 +48,7 @@ __global__ void getCircleSectors(
 	double* minEdgeLength, 
 	double* featureVectors, 
 	double* edgeLengths,
-	double* circleSectors
+	double* oneRingMeanFunctionValues
 );
 __device__ void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1);
 __device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
@@ -187,13 +187,13 @@ int main(){
 	getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, featureVectors, minEdgeLength, vertices, f_primes);
 	cudaDeviceSynchronize();*/
 	
-	std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
-	double* circleSectors;
-	cudaMallocManaged(&circleSectors, numVertices*sizeof(double));
+	std::cout << std::endl << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
+	double* oneRingMeanFunctionValues;
+	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
 	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
-	std::cout << "getCircleSectors<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
-	getCircleSectors<<<numBlocks, blockSize>>>(
+	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
+	getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
 		numVertices, 
 		adjacentVertices_runLength, 
 		facesOfVertices_runLength, 
@@ -203,7 +203,7 @@ int main(){
 		minEdgeLength, 
 		featureVectors, 
 		edgeLengths, 
-		circleSectors
+		oneRingMeanFunctionValues
 	);
 	cudaDeviceSynchronize();
 	/*************************************************************************/
@@ -408,7 +408,7 @@ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVert
 }*/
 
 __global__
-void getCircleSectors(
+void getOneRingMeanFunctionValues(
 	int numVertices, 
 	int* adjacentVertices_runLength,
 	int* facesOfVertices_runLength, 
@@ -418,7 +418,7 @@ void getCircleSectors(
 	double* minEdgeLength, 
 	double* featureVectors, 
 	double* edgeLengths,
-	double* circleSectors
+	double* oneRingMeanFunctionValues
 ){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
@@ -484,8 +484,8 @@ void getCircleSectors(
 			accuArea += currArea;
 		}
 
-		circleSectors[v0] = accuFuncVals / accuArea;
-		printf("circleSectors[%d] %f\n", v0, circleSectors[v0]);
+		oneRingMeanFunctionValues[v0] = accuFuncVals / accuArea;
+		printf("oneRingMeanFunctionValues[%d] %f\n", v0, oneRingMeanFunctionValues[v0]);
 	}
 }
 
