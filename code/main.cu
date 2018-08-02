@@ -1,12 +1,17 @@
 #include <stdio.h>
-#include <iostream>
-#include <set>
+
+#include <array>
 #include <cmath>
 #include <cfloat>
-#include <random>
-#include <array>
-#include <vector>
+#include <iostream>
+#include <iterator>
+#include <fstream>
 #include <map>
+#include <random>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
@@ -18,11 +23,21 @@ vertex scale(vertex v, double scalar);
 vertex combine(vertex v1, vertex v2);
 double l2norm(const vertex vi);
 double l2norm_diff(const vertex vi, const vertex v0);
+template<typename T>
+std::vector<T> split(std::string line){
+	std::istringstream iss(line);
+	std::vector<T> results(std::istream_iterator<T>{iss},
+						   std::istream_iterator<T>());
+	return results;
+}
+template std::vector<std::string> split<std::string>(std::string);
+template std::vector<int> split<int>(std::string);
+template std::vector<float> split<float>(std::string);
+template std::vector<double> split<double>(std::string);
 
 void printCUDAProps(int devCount);
-void loadMesh_syntheticH(vertex vertices[], double featureVectors[], face faces[]);
-void flattenMesh(int numVertices, vertex vertices[], double flat_vertices[], double featureVectors[], int numFaces, face faces[], int flat_faces[]);
-void printMesh(int numVertices, vertex vertices[], double featureVectors[], int numFaces, face faces[]);
+void loadMesh_ply(std::string fileName, int& numVertices, double** flat_vertices, double** featureVectors, int& numFaces, int** flat_faces);
+void printMesh(int numVertices, double* flat_vertices, double* featureVectors, int numFaces, int* faces);
 
 __global__ void buildLookupTables(int numFaces, int* flat_faces, int* facesOfVertices, int* adjacentVertices);
 __global__ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* flat_vertices, double* edgeLengths);
@@ -67,23 +82,15 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Loading Mesh..." << std::endl;
 	/*************************************************************************/
-	const int numVertices = 22;
-	vertex *vertices;
-	double *flat_vertices;
-	double *featureVectors;
-	cudaMallocManaged(&vertices, numVertices*sizeof(vertex));
-	cudaMallocManaged(&flat_vertices, 3*numVertices*sizeof(double));
-	cudaMallocManaged(&featureVectors, numVertices*sizeof(double));
+	int numVertices;
+	int numFaces;
+	double* flat_vertices;
+	double* featureVectors;
+	int* flat_faces;
 	
-	const int numFaces = 36;
-	face *faces;
-	int *flat_faces;
-	cudaMallocManaged(&faces, numFaces*sizeof(face));
-	cudaMallocManaged(&flat_faces, 3*numFaces*sizeof(int));
-	
-	loadMesh_syntheticH(vertices, featureVectors, faces);
-	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
-	flattenMesh(numVertices, vertices, flat_vertices, featureVectors, numFaces, faces, flat_faces);
+	//loadMesh_syntheticH(vertices, featureVectors, faces);
+	loadMesh_ply("../example_meshes/h.ply", numVertices, &flat_vertices, &featureVectors, numFaces, &flat_faces);
+	printMesh(numVertices, flat_vertices, featureVectors, numFaces, flat_faces);
 	/*************************************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
 	/*************************************************************************/
@@ -109,20 +116,20 @@ int main(){
 	//	edges saved twice, once in each direction, but enables use of runLength array...
 	for(int v = 0; v < numVertices; v++){
 		for(int f = 0; f < numFaces; f++){
-			if(faces[f][0] == v){
+			if(flat_faces[f*3+0] == v){
 				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][1]);
-				adjacentVertices[v].insert(faces[f][2]);
+				adjacentVertices[v].insert(flat_faces[f*3+1]);
+				adjacentVertices[v].insert(flat_faces[f*3+2]);
 			}			
-			else if(faces[f][1] == v){
+			else if(flat_faces[f*3+1] == v){
 				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][0]);
-				adjacentVertices[v].insert(faces[f][2]);
+				adjacentVertices[v].insert(flat_faces[f*3+0]);
+				adjacentVertices[v].insert(flat_faces[f*3+2]);
 			}			
-			else if(faces[f][2] == v){
+			else if(flat_faces[f*3+2] == v){
 				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f][0]);
-				adjacentVertices[v].insert(faces[f][1]);
+				adjacentVertices[v].insert(flat_faces[f*3+0]);
+				adjacentVertices[v].insert(flat_faces[f*3+1]);
 			}
 		}
 	}
@@ -186,7 +193,7 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*************************************************************************/
-	std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
+	/*std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 	double* minEdgeLength;
 	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
 	blockSize = 8;
@@ -222,7 +229,7 @@ int main(){
 		edgeLengths, 
 		circleSectors
 	);
-	cudaDeviceSynchronize();
+	cudaDeviceSynchronize();*/
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/*************************************************************************/
@@ -274,155 +281,92 @@ void printCUDAProps(int devCount){
 	}
 }
 
-void loadMesh_syntheticH(
-	vertex vertices[], 
-	double featureVectors[], 
-	face faces[]
-){
-	std::cout << "Loading Vertices..." << std::endl;
-	vertices[0]  = { 0,  0,  0};
-	vertices[1]  = { 2,  0,  0};
-	vertices[2]  = {12,  0,  0};
-	vertices[3]  = {14,  0,  0};
-	vertices[4]  = {14, 20,  0};
-	vertices[5]  = {12, 20,  0};
-	vertices[6]  = { 2, 20,  0};
-	vertices[7]  = { 0, 20,  0};
-	vertices[8]  = { 1,  1, -1};
-	vertices[9]  = {13,  1, -1};
-	vertices[10] = {13, 19, -1};
-	vertices[11] = { 1, 19, -1};
-	vertices[12] = { 2, 10,  0};
-	vertices[13] = {12, 10,  0};
-	vertices[14] = {12, 12,  0};
-	vertices[15] = { 2, 12,  0};
-	vertices[16] = { 1, 11, -1};
-	vertices[17] = {13, 11, -1};
-	vertices[18] = {-2, -2,  0};
-	vertices[19] = {16, -2,  0};
-	vertices[20] = {16, 22,  0};
-	vertices[21] = {-2, 22,  0};	
+void loadMesh_ply(std::string fileName, int& numVertices, double** flat_vertices, double** featureVectors, int& numFaces, int** flat_faces){
+	bool inHeaderSection = true;
+	int faceSectionBegin;
+	int vi = 0;
+	int fi = 0;
 	
-	/*std::cout << std::endl << "Generating Random Feature Vectors..." << std::endl;
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(-1.0, 1.0);
-	double featureVectors[numVertices] = {};
-	for(int i = 0; i < numVertices; i++){
-		featureVectors[i] = dis(gen);
-		std::cout << "featureVector [" << i << "] = " << featureVectors[i] << std::endl;
-	}*/
-	
-	std::cout << "Loading Feature Vectors as all 1..." << std::endl;
-	for(int i = 0; i < 22; i++){
-		featureVectors[i] = 1;
-	}
-	
-	/*std::cout << "Loading Feature Vectors..." << std::endl;
-	featureVectors[0]  = -0.373397;
-	featureVectors[1]  =  0.645161;
-	featureVectors[2]  =  0.797587;
-	featureVectors[3]  = -0.520541;
-	featureVectors[4]  = -0.114591;
-	featureVectors[5]  =  0.788363;
-	featureVectors[6]  = -0.936573;
-	featureVectors[7]  = -0.699675;
-	featureVectors[8]  = -0.139383;
-	featureVectors[9]  =  0.152594;
-	featureVectors[10] = -0.976301;
-	featureVectors[11] =  0.288434;
-	featureVectors[12] = -0.212369;
-	featureVectors[13] =  0.722184;
-	featureVectors[14] =  0.154177;
-	featureVectors[15] =  0.510287;
-	featureVectors[16] =  0.725236;
-	featureVectors[17] =  0.992415;
-	featureVectors[18] =  0.582556;
-	featureVectors[19] =  0.272700;
-	featureVectors[20] = -0.692900;
-	featureVectors[21] =  0.405410;*/
-	
-	std::cout << "Loading Faces..." << std::endl;
-	faces[0]  = { 0,  1,  8};
-	faces[1]  = { 1, 16,  8};
-	faces[2]  = { 1, 12, 16};
-	faces[3]  = {12, 13, 16};
-	faces[4]  = {13, 17, 16};
-	faces[5]  = { 9, 17, 13};
-	faces[6]  = { 2,  9, 13};
-	faces[7]  = { 2,  3,  9};
-	faces[8]  = { 3, 10,  9};
-	faces[9]  = { 3,  4, 10};
-	faces[10] = { 4,  5, 10};
-	faces[11] = { 5, 17, 10};
-	faces[12] = { 5, 14, 17};
-	faces[13] = {14, 15, 17};
-	faces[14] = {15, 16, 17};
-	faces[15] = {11, 16, 15};
-	faces[16] = { 6, 11, 15};
-	faces[17] = { 6,  7, 11};
-	faces[18] = { 7,  8, 11};
-	faces[19] = { 0,  8,  7};
-	faces[20] = { 0, 18,  1};
-	faces[21] = { 1, 18, 19};
-	faces[22] = { 1, 19,  2};
-	faces[23] = { 2, 19,  3};
-	faces[24] = { 3, 19,  4};
-	faces[25] = { 4, 19, 20};
-	faces[26] = { 4, 20,  5};
-	faces[27] = { 5, 20, 21};
-	faces[28] = { 5, 21,  6};
-	faces[29] = { 6, 21,  7};
-	faces[30] = { 0,  7, 21};
-	faces[31] = { 0, 21, 18};
-	faces[32] = { 1,  2, 12};
-	faces[33] = { 2, 13, 12};
-	faces[34] = { 5,  6, 14};
-	faces[35] = { 6, 15, 14};
-}
+	int v_idx = 0;
+	int x_idx;
+	int y_idx;
+	int z_idx;
 
-void flattenMesh(
-	int numVertices, 
-	vertex vertices[],
-	double flat_vertices[],
-	double featureVectors[],
-	int numFaces, 
-	face faces[],
-	int flat_faces[]
-){
-	for(int v = 0; v < numVertices; v++){
-		flat_vertices[(v*3)+0] = vertices[v][0];
-		flat_vertices[(v*3)+1] = vertices[v][1];
-		flat_vertices[(v*3)+2] = vertices[v][2];
-		//std::cout << "flat_vertices[" << v << "*3+{0,1,2}] {" << flat_vertices[(v*3)+0] << ", " << flat_vertices[(v*3)+1] << ", " << flat_vertices[(v*3)+2] << "}" << std::endl;
-	}
-	for(int f = 0; f < numFaces; f++){
-		flat_faces[(f*3)+0] = faces[f][0];
-		flat_faces[(f*3)+1] = faces[f][1];
-		flat_faces[(f*3)+2] = faces[f][2];
-		std::cout << "flat_faces[" << f << "*3+{0,1,2}] {" << flat_faces[(f*3)+0] << ", " << flat_faces[(f*3)+1] << ", " << flat_faces[(f*3)+2] << "}" << std::endl;
+	std::ifstream infile(fileName);
+
+	// read every line in the file
+	std::string line;
+	int lineNumber = 0;
+	while(std::getline(infile, line)){
+		// 3 sections: header, vertices, faces
+		if(inHeaderSection){
+			// parse for numVertices and numFaces
+			if(line.substr(0, 7) == "element"){
+				if(line.substr(8, 6) == "vertex"){
+					std::vector<std::string> words = split<std::string>(line);
+					std::istringstream convert(words[2]);
+					convert >> numVertices;
+				}else if(line.substr(8, 4) == "face"){
+					std::vector<std::string> words = split<std::string>(line);
+					std::istringstream convert(words[2]);
+					convert >> numFaces;
+				}
+			// parse for coord indexes
+			}else if(line.substr(0, 8) == "property"){
+				std::vector<std::string> words = split<std::string>(line);
+				if(words[2] == "x")
+					x_idx = v_idx;
+				else if(words[2] == "y")
+					y_idx = v_idx;
+				else if(words[2] == "z")
+					z_idx = v_idx;
+				v_idx++;
+			}else if(line.substr(0, 10) == "end_header"){
+				inHeaderSection = false;
+				faceSectionBegin = lineNumber + 1 + numVertices;
+				//(*flat_vertices) = (double*) malloc(3 * numVertices * sizeof(double));
+				//(*flat_faces) = (int*) malloc(3 * numFaces * sizeof(int));
+				cudaMallocManaged(&(*flat_vertices), 3 * numVertices * sizeof(double));
+				cudaMallocManaged(&(*featureVectors), numVertices * sizeof(double));
+				cudaMallocManaged(&(*flat_faces), 3 * numFaces * sizeof(int));
+			}
+		}else if(lineNumber < faceSectionBegin){
+			std::vector<double> coords = split<double>(line);
+			(*flat_vertices)[vi*3 + 0] = coords[x_idx];
+			(*flat_vertices)[vi*3 + 1] = coords[y_idx];
+			(*flat_vertices)[vi*3 + 2] = coords[z_idx];
+			//TODO: Are feature vectors stored in PLY file?
+			(*featureVectors)[vi] = 1;
+			vi++;
+		}else{
+			std::vector<int> coords = split<int>(line);
+			(*flat_faces)[fi*3 + 0] = coords[1]; //coords[0] is list size
+			(*flat_faces)[fi*3 + 1] = coords[2];
+			(*flat_faces)[fi*3 + 2] = coords[3];
+			fi++;
+		}
+		lineNumber++;
 	}
 }
 
 void printMesh(
 	int numVertices, 
-	vertex vertices[], 
-	double featureVectors[], 
+	double* flat_vertices, 
+	double* featureVectors, 
 	int numFaces, 
-	face faces[]
+	int* flat_faces
 ){
 	for(int v = 0; v < numVertices; v++){
 		std::cout << "vertices[" << v << "] = ";
 		for(int i=0; i < 3; i++){
-			if(i > 0){
+			if(i > 0)
 				std::cout << ", ";
-			}
-			std::cout << vertices[v][i];
+			std::cout << flat_vertices[v*3+i];
 		}
 		std::cout << " featureVector = " << featureVectors[v] << std::endl;
 	}
 	for(int f = 0; f < numFaces; f++)
-		std::cout << f << " = {" << faces[f][0] << ", " << faces[f][1] << ", " << faces[f][2] << "}" <<std::endl;
+		std::cout << f << " = {" << flat_faces[f*3+0] << ", " << flat_faces[f*3+1] << ", " << flat_faces[f*3+2] << "}" <<std::endl;
 }
 
 
