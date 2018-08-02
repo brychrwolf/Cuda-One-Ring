@@ -80,10 +80,9 @@ int main(){
 	double* vertices;
 	double* featureVectors;
 	int* faces;
-	
-	//loadMesh_syntheticH(vertices, featureVectors, faces);
+
 	loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
-	printMesh(numVertices, vertices, featureVectors, numFaces, faces);
+	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	/*************************************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
 	/*************************************************************************/
@@ -103,29 +102,36 @@ int main(){
 	//int numBlocks = (numCombos + blockSize - 1) / blockSize;
 	//buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
 
-	std::cout << "Iterating over each vertex as v..." << std::endl;
-	std::cout << "as well as Iterating over each face as f..." << std::endl;
+	std::cout << "Iterating over each face as f..." << std::endl;
 	//TODO: Determine if this way is optimal:
-	//	edges saved twice, once in each direction, but enables use of runLength array...
-	for(int v = 0; v < numVertices; v++){
-		for(int f = 0; f < numFaces; f++){
-			if(faces[f*3+0] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f*3+1]);
-				adjacentVertices[v].insert(faces[f*3+2]);
-			}			
-			else if(faces[f*3+1] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f*3+0]);
-				adjacentVertices[v].insert(faces[f*3+2]);
-			}			
-			else if(faces[f*3+2] == v){
-				facesOfVertices[v].insert(f);
-				adjacentVertices[v].insert(faces[f*3+0]);
-				adjacentVertices[v].insert(faces[f*3+1]);
-			}
+	//	edges saved twice, once in each direction, but enables use of runLength array...	
+
+	for(int f = 0; f < numFaces; f++){
+		for(int i = 0; i < 3; i++){ //TODO: relies on there always being 3 vertices to a face
+			int a = f*3+(i+0)%3;
+			int b = f*3+(i+1)%3;
+			int c = f*3+(i+2)%3;
+			int v = faces[a];
+			facesOfVertices[v].insert(f);
+			adjacentVertices[v].insert(faces[b]);
+			adjacentVertices[v].insert(faces[c]);
 		}
 	}
+	
+	/*// Print facesOfVertices
+	for(int v = 0; v < numVertices; v++){
+		std::cerr << "facesOfVertices[" << v << "] ";
+		for(int elem : facesOfVertices[v])
+			std::cerr << elem << " ";
+		std::cerr << std::endl;
+	}
+	// Print adjacentVertices
+	for(int v = 0; v < numVertices; v++){
+		std::cerr << "adjacentVertices[" << v << "] ";
+		for(int elem : adjacentVertices[v])
+			std::cerr << elem << " ";
+		std::cerr << std::endl;
+	}*/
 	
 	// Determine runlengths of adjacentVertices and facesofVertices
 	int* adjacentVertices_runLength;
@@ -134,14 +140,10 @@ int main(){
 	cudaMallocManaged(&facesOfVertices_runLength,  numVertices*sizeof(int));
 	adjacentVertices_runLength[0] = adjacentVertices[0].size();
 	facesOfVertices_runLength[0]  = facesOfVertices[0].size();
-	//std::cout << "adjacentVertices_runLength[" << 0 << "] " << adjacentVertices_runLength[0] << std::endl;
-	//std::cout << "facesOfVertices_runLength[" << 0 << "] " << facesOfVertices_runLength[0] << std::endl;
 	std::cout << "Iterating over each vertex as v0..." << std::endl;
 	for(int v0 = 0+1; v0 < numVertices; v0++){
 		adjacentVertices_runLength[v0] = adjacentVertices_runLength[v0-1] + adjacentVertices[v0].size();
 		facesOfVertices_runLength[v0]  = facesOfVertices_runLength[v0-1]  + facesOfVertices[v0].size();
-		//std::cout << "adjacentVertices_runLength[" << v0 << "] " << adjacentVertices_runLength[v0] << std::endl;
-		//std::cout << "facesOfVertices_runLength[" << v0 << "] " << facesOfVertices_runLength[v0] << std::endl;
 	}
 	
 	// Flatten adjacentVerticies and facesOfVertices
