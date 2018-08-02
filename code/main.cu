@@ -31,13 +31,13 @@ template std::vector<double> split<double>(std::string);
 void printCUDAProps(int devCount);
 void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, double** featureVectors, int& numFaces, int** faces);
 void printMesh(int numVertices, double* vertices, double* featureVectors, int numFaces, int* faces);
+void printVariableDepth2dArrayOfSets(std::string name, std::set<int> arrayOfSets[], int size);
 
-__global__ void buildLookupTables(int numFaces, int* faces, int* facesOfVertices, int* adjacentVertices);
 __global__ void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths);
 __device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength);
 __device__ double cuda_l2norm_diff(int vi, int v0, double* vertices);
 __global__ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
-__global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* vertices, double* f_primes);
+//__global__ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* vertices, double* f_primes);
 __global__ void getCircleSectors(
 	int numVertices, 
 	int* adjacentVertices_runLength,
@@ -96,11 +96,6 @@ int main(){
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
 	std::set<int> facesOfVertices[numVertices] = {};
 	std::set<int> adjacentVertices[numVertices] = {};
-	
-	//int numCombos = numFaces * numVertices;
-	//int blockSize = 256;
-	//int numBlocks = (numCombos + blockSize - 1) / blockSize;
-	//buildLookupTables<<<numBlocks, blockSize>>>(numFaces, faces, facesOfVertices, adjacentVertices);
 
 	std::cout << "Iterating over each face as f..." << std::endl;
 	//TODO: Determine if this way is optimal:
@@ -118,22 +113,10 @@ int main(){
 		}
 	}
 	
-	/*// Print facesOfVertices
-	for(int v = 0; v < numVertices; v++){
-		std::cerr << "facesOfVertices[" << v << "] ";
-		for(int elem : facesOfVertices[v])
-			std::cerr << elem << " ";
-		std::cerr << std::endl;
-	}
-	// Print adjacentVertices
-	for(int v = 0; v < numVertices; v++){
-		std::cerr << "adjacentVertices[" << v << "] ";
-		for(int elem : adjacentVertices[v])
-			std::cerr << elem << " ";
-		std::cerr << std::endl;
-	}*/
+	//printVariableDepth2dArrayOfSets("facesOfVertices", facesOfVertices, numVertices);
+	//printVariableDepth2dArrayOfSets("adjacentVertices", adjacentVertices, numVertices);
 	
-	// Determine runlengths of adjacentVertices and facesofVertices
+	std::cout << "Determine runlengths of adjacentVertices and facesofVertices" << std::endl;
 	int* adjacentVertices_runLength;
 	int* facesOfVertices_runLength;
 	cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int));
@@ -146,7 +129,7 @@ int main(){
 		facesOfVertices_runLength[v0]  = facesOfVertices_runLength[v0-1]  + facesOfVertices[v0].size();
 	}
 	
-	// Flatten adjacentVerticies and facesOfVertices
+	std::cout << "Flatten adjacentVerticies and facesOfVertices" << std::endl;
 	int numAdjacentVertices = adjacentVertices_runLength[numVertices-1];
 	int numFacesOfVertices  = facesOfVertices_runLength[numVertices-1];
 	int* flat_adjacentVertices;
@@ -155,18 +138,16 @@ int main(){
 	cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int));
 	int r = 0;
 	int s = 0;
-	std::cout << "Iterating over each vertex as v0..." << std::endl;
+	std::cout << "Iterating over each adjacentVertices and facesOfVertices..." << std::endl;
 	for(int v0 = 0; v0 < numVertices; v0++){
 		for(std::set<int>::iterator vi_iter = adjacentVertices[v0].begin(); vi_iter != adjacentVertices[v0].end(); vi_iter++){
 			int vi = *vi_iter;
 			flat_adjacentVertices[r] = vi;
-			//std::cout << "flat_adjacentVertices[" << r << "] " << flat_adjacentVertices[r] << std::endl;
 			r++;
 		}
 		for(std::set<int>::iterator vi_iter = facesOfVertices[v0].begin(); vi_iter != facesOfVertices[v0].end(); vi_iter++){
 			int vi = *vi_iter;
 			flat_facesOfVertices[s] = vi;
-			//std::cout << "flat_facesOfVertices[" << s << "] " << flat_facesOfVertices[s] << std::endl;
 			s++;
 		}
 	}
@@ -197,14 +178,14 @@ int main(){
 	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, vertices, edgeLengths, minEdgeLength);
 	cudaDeviceSynchronize();
 
-	std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
+	/*std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
 	double* f_primes;
 	cudaMallocManaged(&f_primes, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
 	numBlocks = max(1, numAdjacentVertices / blockSize);
 	std::cout << "getFPrimes<<<" << numBlocks << ", " << blockSize << ">>(" << numAdjacentVertices << ")" << std::endl;
 	getFPrimes<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, featureVectors, minEdgeLength, vertices, f_primes);
-	cudaDeviceSynchronize();
+	cudaDeviceSynchronize();*/
 	
 	std::cout << std::endl << "Calculating circle_sectors..." << std::endl;
 	double* circleSectors;
@@ -338,14 +319,14 @@ void printMesh(
 		std::cout << f << " = {" << faces[f*3+0] << ", " << faces[f*3+1] << ", " << faces[f*3+2] << "}" <<std::endl;
 }
 
-
-__global__
-void buildLookupTables(int numFaces, int* faces, int* facesOfVertices, int* adjacentVertices){
-	//int index = blockIdx.x * blockDim.x + threadIdx.x;
-	//int stride = blockDim.x * gridDim.x;
-
-	//int v = index / numFaces;
-	//int f = index % numFaces;
+void printVariableDepth2dArrayOfSets(std::string name, std::set<int> arrayOfSets[], int size){
+	std::cerr << std::endl;
+	for(int i = 0; i < size; i++){
+		std::cerr << name << "[" << i << "] ";
+		for(int elem : arrayOfSets[i])
+			std::cerr << elem << " ";
+		std::cerr << std::endl;
+	}
 }
 
 __global__
@@ -414,7 +395,7 @@ void getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVer
 	}
 }
 
-__global__
+/*__global__
 void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* featureVectors, double* minEdgeLength, double* vertices, double* f_primes){
 	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	int stride = blockDim.x * gridDim.x; //32*3 = 96
@@ -424,7 +405,7 @@ void getFPrimes(int numAdjacentVertices, int numVertices, int* flat_adjacentVert
 		f_primes[av] = featureVectors[v0] + minEdgeLength[v0] * (featureVectors[vi] - featureVectors[v0]) / cuda_l2norm_diff(vi, v0, vertices);
 		//printf("f_primes[%d]\t(v0 %d, vi %d)\t%g\n", av, v0, vi, f_primes[av]);
 	}
-}
+}*/
 
 __global__
 void getCircleSectors(
