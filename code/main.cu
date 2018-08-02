@@ -16,13 +16,6 @@
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
 
-typedef std::array<double, 3> vertex;
-typedef std::array<int, 3> face;
-
-vertex scale(vertex v, double scalar);
-vertex combine(vertex v1, vertex v2);
-double l2norm(const vertex vi);
-double l2norm_diff(const vertex vi, const vertex v0);
 template<typename T>
 std::vector<T> split(std::string line){
 	std::istringstream iss(line);
@@ -233,32 +226,6 @@ int main(){
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/*************************************************************************/
-}
-
-
-
-vertex scale(vertex v, double scalar){
-	return {v[0]*scalar,
-			v[1]*scalar, 
-			v[2]*scalar};
-}
-
-vertex combine(vertex v1, vertex v2){
-	return {v1[0] + v2[0],
-			v1[1] + v2[1],
-			v1[2] + v2[2]};
-}
-
-double l2norm(const vertex vi){
-	return sqrt(vi[0]*vi[0]
-			  + vi[1]*vi[1]
-			  + vi[2]*vi[2]);
-}
-
-double l2norm_diff(const vertex vi, const vertex v0){
-	return sqrt((vi[0] - v0[0])*(vi[0] - v0[0])
-			  + (vi[1] - v0[1])*(vi[1] - v0[1])
-			  + (vi[2] - v0[2])*(vi[2] - v0[2]));
 }
 
 void printCUDAProps(int devCount){
