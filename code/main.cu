@@ -84,8 +84,8 @@ int main(){
 	double* featureVectors;
 	int* faces;
 
-	//loadMesh_ply("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
-	loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
+	loadMesh_ply("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
+	//loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	std::cout << "numVertices " << numVertices << " numFaces " << numFaces << std::endl;
 	/*************************************************************************/
@@ -99,8 +99,9 @@ int main(){
 	/*************************************************************************/
 	std::cout << "Building table of faces by vertex, " << std::endl;
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
-	std::set<int> facesOfVertices[numVertices] = {};
-	std::set<int> adjacentVertices[numVertices] = {};
+
+	std::vector<std::set<int>> adjacentVertices(numVertices);
+	std::vector<std::set<int>> facesOfVertices(numVertices);
 
 	std::cout << "Iterating over each face as f..." << std::endl;
 	//TODO: Determine if this way is optimal:
