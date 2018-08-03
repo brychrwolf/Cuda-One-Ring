@@ -17,7 +17,7 @@
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
 
-#define CUDA_ERROR_CHECK
+///#define CUDA_ERROR_CHECK
 
 template<typename T>
 std::vector<T> split(std::string line){
@@ -69,6 +69,43 @@ int main(){
 		printCUDAProps(devCount);
 	int blockSize;
 	int numBlocks;
+	
+	cudaEvent_t startLoadingMesh, stopLoadingMesh;
+	cudaEventCreate(&startLoadingMesh);
+	cudaEventCreate(&stopLoadingMesh);
+	float millisLoadingMesh = 0;
+	
+	cudaEvent_t startBuildingTables, stopBuildingTables;
+	cudaEventCreate(&startBuildingTables);
+	
+		cudaEvent_t startBuildingSets, stopBuildingSets;
+		cudaEventCreate(&startBuildingSets);
+		cudaEventCreate(&stopBuildingSets);
+		float millisBuildingSets = 0;
+		
+		cudaEvent_t startDetermineRunLengths, stopDetermineRunLengths;
+		cudaEventCreate(&startDetermineRunLengths);
+		cudaEventCreate(&stopDetermineRunLengths);
+		float millisDetermineRunLengths = 0;
+		
+		cudaEvent_t startFlattenSets, stopFlattenSets;
+		cudaEventCreate(&startFlattenSets);
+		cudaEventCreate(&stopFlattenSets);
+		float millisFlattenSets = 0;
+		
+		cudaEvent_t startPreCalEdgeLengths, stopPreCalEdgeLengths;
+		cudaEventCreate(&startPreCalEdgeLengths);
+		cudaEventCreate(&stopPreCalEdgeLengths);
+		float millisPreCalEdgeLengths = 0;
+		
+	cudaEventCreate(&stopBuildingTables);
+	float millisBuildingTables = 0;
+	
+	cudaEvent_t startCalculating, stopCalculating;
+	cudaEventCreate(&startCalculating);
+	cudaEventCreate(&stopCalculating);
+	float millisCalculating = 0;
+
 	/*************************************************************************/
 	std::cout << "****** CUDA Initialized." << std::endl;
 	/*************************************************************************/
@@ -78,6 +115,7 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Loading Mesh..." << std::endl;
 	/*************************************************************************/
+	cudaEventRecord(startLoadingMesh);
 	int numVertices;
 	int numFaces;
 	double* vertices;
@@ -88,6 +126,7 @@ int main(){
 	//loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	std::cout << "numVertices " << numVertices << " numFaces " << numFaces << std::endl;
+	cudaEventRecord(stopLoadingMesh);
 	/*************************************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
 	/*************************************************************************/
@@ -97,16 +136,15 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/*************************************************************************/
-	std::cout << "Building table of faces by vertex, " << std::endl;
+	cudaEventRecord(startBuildingTables);
+	std::cout << "Building set of faces by vertex, " << std::endl;
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
-
+	cudaEventRecord(startBuildingSets);
 	std::vector<std::set<int>> adjacentVertices(numVertices);
 	std::vector<std::set<int>> facesOfVertices(numVertices);
 
-	std::cout << "Iterating over each face as f..." << std::endl;
 	//TODO: Determine if this way is optimal:
-	//	edges saved twice, once in each direction, but enables use of runLength array...	
-
+	//	edges saved twice, once in each direction, but enables use of runLength array...
 	for(int f = 0; f < numFaces; f++){
 		for(int i = 0; i < 3; i++){ //TODO: relies on there always being 3 vertices to a face
 			int a = f*3+(i+0)%3;
@@ -118,11 +156,13 @@ int main(){
 			adjacentVertices[v].insert(faces[c]);
 		}
 	}
+	cudaEventRecord(stopBuildingSets);
 	
 	//printVariableDepth2dArrayOfSets("facesOfVertices", facesOfVertices, numVertices);
 	//printVariableDepth2dArrayOfSets("adjacentVertices", adjacentVertices, numVertices);
 	
 	std::cout << "Determine runlengths of adjacentVertices and facesofVertices" << std::endl;
+	cudaEventRecord(startDetermineRunLengths);
 	int* adjacentVertices_runLength;
 	int* facesOfVertices_runLength;
 	CudaSafeCall(cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int)));
@@ -134,8 +174,10 @@ int main(){
 		adjacentVertices_runLength[v0] = adjacentVertices_runLength[v0-1] + adjacentVertices[v0].size();
 		facesOfVertices_runLength[v0]  = facesOfVertices_runLength[v0-1]  + facesOfVertices[v0].size();
 	}
+	cudaEventRecord(stopDetermineRunLengths);
 	
 	std::cout << "Flatten adjacentVerticies and facesOfVertices" << std::endl;
+	cudaEventRecord(startFlattenSets);
 	int numAdjacentVertices = adjacentVertices_runLength[numVertices-1];
 	int numFacesOfVertices  = facesOfVertices_runLength[numVertices-1];
 	int* flat_adjacentVertices;
@@ -157,8 +199,10 @@ int main(){
 			s++;
 		}
 	}
+	cudaEventRecord(stopFlattenSets);
 	
 	// Precalculate Edge Lengths
+	cudaEventRecord(startPreCalEdgeLengths);
 	double* edgeLengths;
 	CudaSafeCall(cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double)));
 	blockSize = 32;
@@ -167,6 +211,8 @@ int main(){
 	getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, vertices, edgeLengths);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
 	CudaCheckError();
+	cudaEventRecord(stopPreCalEdgeLengths);
+	cudaEventRecord(stopBuildingTables);
 	/*************************************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
 	/*************************************************************************/
@@ -176,6 +222,7 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*************************************************************************/
+	cudaEventRecord(startCalculating);
 	std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 	double* minEdgeLength;
 	CudaSafeCall(cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double)));
@@ -215,8 +262,68 @@ int main(){
 	);
 	cudaDeviceSynchronize();
 	CudaCheckError();
+	cudaEventRecord(stopCalculating);
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
+	/*************************************************************************/
+
+
+
+	/*************************************************************************/
+	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
+	/*************************************************************************/
+	cudaEventSynchronize(startLoadingMesh);
+	cudaEventSynchronize(stopLoadingMesh);
+	cudaEventElapsedTime(&millisLoadingMesh, startLoadingMesh, stopLoadingMesh);
+	cudaEventDestroy(startLoadingMesh);
+	cudaEventDestroy(stopLoadingMesh);
+
+	cudaEventSynchronize(startBuildingTables);
+	cudaEventSynchronize(stopBuildingTables);
+	cudaEventElapsedTime(&millisBuildingTables, startBuildingTables, stopBuildingTables);
+	cudaEventDestroy(startBuildingTables);
+	cudaEventDestroy(stopBuildingTables);
+
+		cudaEventSynchronize(startBuildingSets);
+		cudaEventSynchronize(stopBuildingSets);
+		cudaEventElapsedTime(&millisBuildingSets, startBuildingSets, stopBuildingSets);
+		cudaEventDestroy(startBuildingSets);
+		cudaEventDestroy(stopBuildingSets);
+
+		cudaEventSynchronize(startDetermineRunLengths);
+		cudaEventSynchronize(stopDetermineRunLengths);
+		cudaEventElapsedTime(&millisDetermineRunLengths, startDetermineRunLengths, stopDetermineRunLengths);
+		cudaEventDestroy(startDetermineRunLengths);
+		cudaEventDestroy(stopDetermineRunLengths);
+
+		cudaEventSynchronize(startFlattenSets);
+		cudaEventSynchronize(stopFlattenSets);
+		cudaEventElapsedTime(&millisFlattenSets, startFlattenSets, stopFlattenSets);
+		cudaEventDestroy(startFlattenSets);
+		cudaEventDestroy(stopFlattenSets);
+
+		cudaEventSynchronize(startPreCalEdgeLengths);
+		cudaEventSynchronize(stopPreCalEdgeLengths);
+		cudaEventElapsedTime(&millisPreCalEdgeLengths, startPreCalEdgeLengths, stopPreCalEdgeLengths);
+		cudaEventDestroy(startPreCalEdgeLengths);
+		cudaEventDestroy(stopPreCalEdgeLengths);
+	
+	cudaEventSynchronize(startCalculating);
+	cudaEventSynchronize(stopCalculating);
+	cudaEventElapsedTime(&millisCalculating, startCalculating, stopCalculating);
+	cudaEventDestroy(startCalculating);
+	cudaEventDestroy(stopCalculating);
+	
+	std::cout << "Elapsed times:" << std::endl;
+	std::cout << "LoadingMesh\t" << millisLoadingMesh << std::endl;
+	std::cout << "BuildingTables\t" << millisBuildingTables << std::endl;
+	std::cout << "\tBuildingSets\t\t" << millisBuildingSets << std::endl;
+	std::cout << "\tDetermineRunLengths\t" << millisDetermineRunLengths << std::endl;
+	std::cout << "\tFlattenSets\t\t" << millisFlattenSets << std::endl;
+	std::cout << "\tPreCalEdgeLengths\t" << millisPreCalEdgeLengths << std::endl;
+	std::cout << "Calculating\t" << millisCalculating << std::endl;
+	/*************************************************************************/
+	std::cout << "****** Finished Analyzing..." << std::endl;
 	/*************************************************************************/
 }
 
@@ -252,6 +359,11 @@ void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, dou
 	int z_idx;
 
 	std::ifstream infile(fileName);
+	
+	// for Random Feature Vectors
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<> dis(-1.0, 1.0);
 
 	// read every line in the file
 	std::string line;
@@ -295,7 +407,7 @@ void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, dou
 			(*vertices)[vi*3 + 1] = coords[y_idx];
 			(*vertices)[vi*3 + 2] = coords[z_idx];
 			//TODO: Are feature vectors stored in PLY file?
-			(*featureVectors)[vi] = 1;
+			(*featureVectors)[vi] = dis(gen);//1;
 			vi++;
 		}else{
 			std::vector<int> coords = split<int>(line);
@@ -494,7 +606,8 @@ void getOneRingMeanFunctionValues(
 		}
 
 		oneRingMeanFunctionValues[v0] = accuFuncVals / accuArea;
-		printf("oneRingMeanFunctionValues[%d] %f\n", v0, oneRingMeanFunctionValues[v0]);
+		//if(global_threadIndex % 1000 == 0)
+		//	printf("oneRingMeanFunctionValues[%d] %f\n", v0, oneRingMeanFunctionValues[v0]);
 	}
 }
 
