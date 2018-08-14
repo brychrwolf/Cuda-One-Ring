@@ -186,7 +186,6 @@ int main(){
 	CudaSafeCall(cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int)));
 	int r = 0;
 	int s = 0;
-	std::cout << "Iterating over each adjacentVertices and facesOfVertices..." << std::endl;
 	for(int v0 = 0; v0 < numVertices; v0++){
 		for(std::set<int>::iterator vi_iter = adjacentVertices[v0].begin(); vi_iter != adjacentVertices[v0].end(); vi_iter++){
 			int vi = *vi_iter;
@@ -201,7 +200,7 @@ int main(){
 	}
 	cudaEventRecord(stopFlattenSets);
 	
-	// Precalculate Edge Lengths
+	std::cout << "Precalculate Edge Lengths" << std::endl;
 	cudaEventRecord(startPreCalEdgeLengths);
 	double* edgeLengths;
 	CudaSafeCall(cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double)));
@@ -454,7 +453,7 @@ __global__
 void getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths){
 	//TODO Optimization analysis: storage vs speed
 	//this:
-	//	flat_adjacentVertices = 6nV
+	//	flat_adjacentVertices = 6nV (average 6 pairs per vertex)
 	//	adjacentVertices_runLength = 1nV
 	//	index search requires averagePairCount per Vertex (6nV)
 	//fully indexed:
@@ -495,9 +494,20 @@ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength)
 
 __device__
 double cuda_l2norm_diff(int vi, int v0, double* vertices){
+	// Too slow
 	return sqrt((double) (vertices[(vi*3)+0] - vertices[(v0*3)+0])*(vertices[(vi*3)+0] - vertices[(v0*3)+0])
 					   + (vertices[(vi*3)+1] - vertices[(v0*3)+1])*(vertices[(vi*3)+1] - vertices[(v0*3)+1])
 					   + (vertices[(vi*3)+2] - vertices[(v0*3)+2])*(vertices[(vi*3)+2] - vertices[(v0*3)+2]));
+	/* Even slower...!?
+	int vi30 = (vi * 3);
+	int vi31 = (vi * 3) + 1;
+	int vi32 = (vi * 3) + 2;
+	int v030 = (v0 * 3);
+	int v031 = (v0 * 3) + 1;
+	int v032 = (v0 * 3) + 2;
+	return sqrt((double) (vertices[vi30] - vertices[v030]) * (vertices[vi30] - vertices[v030])
+					   + (vertices[vi31] - vertices[v031]) * (vertices[vi31] - vertices[v031])
+					   + (vertices[vi32] - vertices[v032]) * (vertices[vi32] - vertices[v032]));*/
 }
 
 __global__
