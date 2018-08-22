@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "cudaError.h"
 
 #include <array>
 #include <cmath>
@@ -13,6 +12,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "cudaAccess.h"
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
@@ -31,7 +32,6 @@ template std::vector<int> split<int>(std::string);
 template std::vector<float> split<float>(std::string);
 template std::vector<double> split<double>(std::string);
 
-void printCUDAProps(int devCount);
 void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, double** featureVectors, int& numFaces, int** faces);
 void printMesh(int numVertices, double* vertices, double* featureVectors, int numFaces, int* faces);
 void printVariableDepth2dArrayOfSets(std::string name, std::set<int> arrayOfSets[], int size);
@@ -60,13 +60,15 @@ int main(){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Initializing CUDA..." << std::endl;
 	/*************************************************************************/
+	CudaAccess ca;
+
 	int devCount;
 	cudaGetDeviceCount(&devCount);
 	printf("CUDA Device Query...\n");
 	if(devCount <= 0)
 		std::cout << "No CUDA devices found." << std::endl;
 	else
-		printCUDAProps(devCount);
+		ca.printCUDAProps(devCount);
 	int blockSize;
 	int numBlocks;
 	
@@ -165,8 +167,8 @@ int main(){
 	cudaEventRecord(startDetermineRunLengths);
 	int* adjacentVertices_runLength;
 	int* facesOfVertices_runLength;
-	CudaSafeCall(cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int)));
-	CudaSafeCall(cudaMallocManaged(&facesOfVertices_runLength,  numVertices*sizeof(int)));
+	cudaMallocManaged(&adjacentVertices_runLength, numVertices*sizeof(int));
+	cudaMallocManaged(&facesOfVertices_runLength,  numVertices*sizeof(int));
 	adjacentVertices_runLength[0] = adjacentVertices[0].size();
 	facesOfVertices_runLength[0]  = facesOfVertices[0].size();
 	std::cout << "Iterating over each vertex as v0..." << std::endl;
@@ -182,8 +184,8 @@ int main(){
 	int numFacesOfVertices  = facesOfVertices_runLength[numVertices-1];
 	int* flat_adjacentVertices;
 	int* flat_facesOfVertices;
-	CudaSafeCall(cudaMallocManaged(&flat_adjacentVertices, numAdjacentVertices*sizeof(int)));
-	CudaSafeCall(cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int)));
+	cudaMallocManaged(&flat_adjacentVertices, numAdjacentVertices*sizeof(int));
+	cudaMallocManaged(&flat_facesOfVertices, numFacesOfVertices*sizeof(int));
 	int r = 0;
 	int s = 0;
 	for(int v0 = 0; v0 < numVertices; v0++){
@@ -203,13 +205,12 @@ int main(){
 	std::cout << "Precalculate Edge Lengths" << std::endl;
 	cudaEventRecord(startPreCalEdgeLengths);
 	double* edgeLengths;
-	CudaSafeCall(cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double)));
+	cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double));
 	blockSize = 32;
 	numBlocks = max(1, numAdjacentVertices / blockSize);
 	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(" << numAdjacentVertices << ")" << std::endl;
 	getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, vertices, edgeLengths);
 	cudaDeviceSynchronize();	//wait for GPU to finish before accessing on host
-	CudaCheckError();
 	cudaEventRecord(stopPreCalEdgeLengths);
 	cudaEventRecord(stopBuildingTables);
 	/*************************************************************************/
@@ -224,13 +225,12 @@ int main(){
 	cudaEventRecord(startCalculating);
 	std::cout << "Calculating minimum edge length among adjacent vertices..." << std::endl;
 	double* minEdgeLength;
-	CudaSafeCall(cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double)));
+	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
 	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
 	std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
 	getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, vertices, edgeLengths, minEdgeLength);
 	cudaDeviceSynchronize();
-	CudaCheckError();
 
 	/*std::cout << std::endl << "Calculating f', weighted mean f0 and fi by distance..." << std::endl;
 	double* f_primes;
@@ -243,7 +243,7 @@ int main(){
 	
 	std::cout << std::endl << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	double* oneRingMeanFunctionValues;
-	CudaSafeCall(cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double)));
+	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
 	blockSize = 8;
 	numBlocks = max(1, numVertices / blockSize);
 	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
@@ -260,7 +260,6 @@ int main(){
 		oneRingMeanFunctionValues
 	);
 	cudaDeviceSynchronize();
-	CudaCheckError();
 	cudaEventRecord(stopCalculating);
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
@@ -326,26 +325,6 @@ int main(){
 	/*************************************************************************/
 }
 
-void printCUDAProps(int devCount){
-	printf("There are %d CUDA devices.\n", devCount);
-
-	// Iterate through devices
-	for (int i = 0; i < devCount; ++i)
-	{
-		// Get device properties
-		printf("\nCUDA Device #%d\n", i);
-		cudaDeviceProp devProp;
-		cudaGetDeviceProperties(&devProp, i);
-		
-    	printf("Name:                          %s\n",  devProp.name);
-    	printf("Number of multiprocessors:     %d\n",  devProp.multiProcessorCount);
-    	printf("Clock rate:                    %d\n",  devProp.clockRate);
-    	printf("Total constant memory:         %u\n",  devProp.totalConstMem);
-		printf("CUDA Capability Major/Minor version number:    %d.%d\n", devProp.major, devProp.minor);
-
-	}
-}
-
 void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, double** featureVectors, int& numFaces, int** faces){
 	bool inHeaderSection = true;
 	int faceSectionBegin;
@@ -396,9 +375,9 @@ void loadMesh_ply(std::string fileName, int& numVertices, double** vertices, dou
 				faceSectionBegin = lineNumber + 1 + numVertices;
 				//(*vertices) = (double*) malloc(3 * numVertices * sizeof(double));
 				//(*faces) = (int*) malloc(3 * numFaces * sizeof(int));
-				CudaSafeCall(cudaMallocManaged(&(*vertices), 3 * numVertices * sizeof(double)));
-				CudaSafeCall(cudaMallocManaged(&(*featureVectors), numVertices * sizeof(double)));
-				CudaSafeCall(cudaMallocManaged(&(*faces), 3 * numFaces * sizeof(int)));
+				cudaMallocManaged(&(*vertices), 3 * numVertices * sizeof(double));
+				cudaMallocManaged(&(*featureVectors), numVertices * sizeof(double));
+				cudaMallocManaged(&(*faces), 3 * numFaces * sizeof(int));
 			}
 		}else if(lineNumber < faceSectionBegin){
 			std::vector<double> coords = split<double>(line);
