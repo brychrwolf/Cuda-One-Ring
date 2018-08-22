@@ -1,5 +1,5 @@
 main:
-	nvcc main.cu cudaAccess.cu -o main
+	nvcc main.cu cudaAccess.cu cudaOneRing.cu -o main
 	
 clean:
-	rm -f *.o *.a *.linkinfo a.out *~ cudaAccess main
+	rm -f *.o *.a *.linkinfo a.out *~ main

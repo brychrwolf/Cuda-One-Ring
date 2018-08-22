@@ -14,11 +14,10 @@
 #include <vector>
 
 #include "cudaAccess.h"
+#include "cudaOneRing.h"
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
-
-///#define CUDA_ERROR_CHECK
 
 template<typename T>
 std::vector<T> split(std::string line){
