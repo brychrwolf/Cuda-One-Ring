@@ -56,7 +56,7 @@ __global__ void getOneRingMeanFunctionValues(
 __device__ void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1);
 __device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
 
-int main(){
+int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Initializing CUDA..." << std::endl;
 	/*************************************************************************/
@@ -122,8 +122,9 @@ int main(){
 	double* featureVectors;
 	int* faces;
 
+	loadMesh_ply(av[1], numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//loadMesh_ply("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
-	loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
+	//loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	std::cout << "numVertices " << numVertices << " numFaces " << numFaces << std::endl;
 	cudaEventRecord(stopLoadingMesh);
