@@ -2,11 +2,14 @@
 #define CUDAACCESS_H
 
 class CudaAccess{
+		int deviceCount;
+
 	public:
 		CudaAccess();
-		
-		// Print out properties of found CUDA devices
-		void printCUDAProps(int devCount);
+
+		void updateDeviceCount();
+		int getDeviceCount();
+		void printCUDAProps();
 };
 
 #endif // CUDAACCESS_H

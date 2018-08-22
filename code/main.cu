@@ -62,13 +62,11 @@ int main(){
 	/*************************************************************************/
 	CudaAccess ca;
 
-	int devCount;
-	cudaGetDeviceCount(&devCount);
 	printf("CUDA Device Query...\n");
-	if(devCount <= 0)
+	if(ca.getDeviceCount() <= 0)
 		std::cout << "No CUDA devices found." << std::endl;
 	else
-		ca.printCUDAProps(devCount);
+		ca.printCUDAProps();
 	int blockSize;
 	int numBlocks;
 	
@@ -124,8 +122,8 @@ int main(){
 	double* featureVectors;
 	int* faces;
 
-	loadMesh_ply("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
-	//loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
+	//loadMesh_ply("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
+	loadMesh_ply("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//printMesh(numVertices, vertices, featureVectors, numFaces, faces);
 	std::cout << "numVertices " << numVertices << " numFaces " << numFaces << std::endl;
 	cudaEventRecord(stopLoadingMesh);
