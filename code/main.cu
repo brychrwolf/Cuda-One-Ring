@@ -7,8 +7,9 @@
 #include <map>
 
 #include "cudaAccess.h"
-#include "cudaOneRing.h"
 #include "cudaMesh.h"
+#include "cudaOneRing.h"
+#include "cudaTimer.h"
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
@@ -47,10 +48,7 @@ int main(int ac, char** av){
 	int blockSize;
 	int numBlocks;
 	
-	cudaEvent_t startLoadingMesh, stopLoadingMesh;
-	cudaEventCreate(&startLoadingMesh);
-	cudaEventCreate(&stopLoadingMesh);
-	float millisLoadingMesh = 0;
+	CudaTimer t0("Loading Mesh");
 	
 	cudaEvent_t startBuildingTables, stopBuildingTables;
 	cudaEventCreate(&startBuildingTables);
@@ -100,12 +98,12 @@ int main(int ac, char** av){
 	double* featureVectors;
 	int* faces;
 	
-	cudaEventRecord(startLoadingMesh);
+	t0.start();
 	cm.loadPLY(av[1], numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//cm.loadPLY("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//cm.loadPLY("../example_meshes/h.ply", numVertices, &vertices, &featureVectors, numFaces, &faces);
 	//cm.printMesh(numVertices, vertices, featureVectors, numFaces, faces);
-	cudaEventRecord(stopLoadingMesh);
+	t0.stop();
 	
 	std::cout << "numVertices " << numVertices << " numFaces " << numFaces << std::endl;
 	/*************************************************************************/
@@ -249,12 +247,7 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
-	cudaEventSynchronize(startLoadingMesh);
-	cudaEventSynchronize(stopLoadingMesh);
-	cudaEventElapsedTime(&millisLoadingMesh, startLoadingMesh, stopLoadingMesh);
-	cudaEventDestroy(startLoadingMesh);
-	cudaEventDestroy(stopLoadingMesh);
-
+	
 	cudaEventSynchronize(startBuildingTables);
 	cudaEventSynchronize(stopBuildingTables);
 	cudaEventElapsedTime(&millisBuildingTables, startBuildingTables, stopBuildingTables);
@@ -292,7 +285,7 @@ int main(int ac, char** av){
 	cudaEventDestroy(stopCalculating);
 	
 	std::cout << "Elapsed times:" << std::endl;
-	std::cout << "LoadingMesh\t" << millisLoadingMesh << std::endl;
+	std::cout << "LoadingMesh\t" << t0.getElapsedTime() << std::endl;
 	std::cout << "BuildingTables\t" << millisBuildingTables << std::endl;
 	std::cout << "\tBuildingSets\t\t" << millisBuildingSets << std::endl;
 	std::cout << "\tDetermineRunLengths\t" << millisDetermineRunLengths << std::endl;
