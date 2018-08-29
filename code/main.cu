@@ -6,10 +6,9 @@
 #include <iostream>
 #include <map>
 
-#include "cudaAccess.h"
+#include "cudaAccess.cuh"
 #include "cudaMesh.cuh"
-#include "cudaOneRing.h"
-#include "cudaTimer.h"
+#include "cudaTimer.cuh"
 
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
@@ -28,6 +27,8 @@ __global__ void getOneRingMeanFunctionValues(
 );
 __device__ void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1);
 __device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
+
+void printOneRingMeanFunctionValues(int numVertices, double* oneRingMeanFunctionValues);
 
 int main(int ac, char** av){
 	/*************************************************************************/
@@ -117,7 +118,7 @@ int main(int ac, char** av){
 	ct_preCalMinEdgeLength.start();
 	cm.preCalculateMinEdgeLength();
 	ct_preCalMinEdgeLength.stop();
-	cm.printMinEdgeLength();
+	//cm.printMinEdgeLength();
 	
 	ct_BuildingTables.stop();
 	/*************************************************************************/
@@ -130,7 +131,7 @@ int main(int ac, char** av){
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*************************************************************************/
 	ct_Calculating.start();
-	std::cout << std::endl << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
+	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	double* oneRingMeanFunctionValues;
 	cudaMallocManaged(&oneRingMeanFunctionValues, cm.getNumVertices()*sizeof(double));
 	blockSize = 8;
@@ -149,6 +150,7 @@ int main(int ac, char** av){
 		oneRingMeanFunctionValues
 	);
 	cudaDeviceSynchronize();
+	printOneRingMeanFunctionValues(cm.getNumVertices(), oneRingMeanFunctionValues);
 	ct_Calculating.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
@@ -166,7 +168,7 @@ int main(int ac, char** av){
 	std::cout << "\tDetermineRunLengths\t" << ct_DetermineRunLengths.getElapsedTime() << std::endl;
 	std::cout << "\tFlattenSets\t\t" << ct_FlattenSets.getElapsedTime() << std::endl;
 	std::cout << "\tPreCalEdgeLengths\t" << ct_PreCalEdgeLengths.getElapsedTime() << std::endl;
-	std::cout << "\tct_preCalMinEdgeLength\t" << ct_preCalMinEdgeLength.getElapsedTime() << std::endl;
+	std::cout << "\tPreCalMinEdgeLength\t" << ct_preCalMinEdgeLength.getElapsedTime() << std::endl;
 	std::cout << "Calculating\t" << ct_Calculating.getElapsedTime() << std::endl;
 	/*************************************************************************/
 	std::cout << "****** Finished Analyzing..." << std::endl;
@@ -287,4 +289,10 @@ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, i
 	return edgeLength;
 }
 
+void printOneRingMeanFunctionValues(int numVertices, double* oneRingMeanFunctionValues){
+	std::cerr << std::endl;
+	for(int i = 0; i < numVertices; i++){
+		std::cerr << "oneRingMeanFunctionValues[" << i << "] " << oneRingMeanFunctionValues[i] << std::endl;
+	}
+}
 

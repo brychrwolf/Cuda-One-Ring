@@ -1,6 +1,6 @@
 #include <string>
 
-#include "cudaTimer.h"
+#include "cudaTimer.cuh"
 
 CudaTimer::CudaTimer(){
 	name = "unnamed";

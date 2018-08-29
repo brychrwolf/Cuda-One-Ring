@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "cudaAccess.h"
+#include "cudaAccess.cuh"
 
 CudaAccess::CudaAccess(){
 	updateDeviceCount();
