@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "cudaAccess.cuh"
+
 template<typename T>
 std::vector<T> split(std::string line){
 	std::istringstream iss(line);
@@ -26,6 +28,7 @@ __device__ double cuda_l2norm_diff(int vi, int v0, double* vertices);
 __global__ void kernel_getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
 
 class CudaMesh{
+		CudaAccess* ca;
 		int numVertices;
 		int numFaces;
 		double* vertices;
@@ -44,6 +47,7 @@ class CudaMesh{
 
 	public:
 		CudaMesh();
+		CudaMesh(CudaAccess* acc);
 		~CudaMesh();
 		
 		/* Getters and Setters */

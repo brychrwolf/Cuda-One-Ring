@@ -44,9 +44,6 @@ int main(int ac, char** av){
 	}else{
 		ca.printCUDAProps();
 	}
-
-	int blockSize;
-	int numBlocks;
 	
 	CudaTimer ct_LoadingMesh;
 	CudaTimer ct_BuildingTables;
@@ -66,7 +63,7 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Loading Mesh..." << std::endl;
 	/*************************************************************************/
-	CudaMesh cm;
+	CudaMesh cm(&ca);
 	
 	ct_LoadingMesh.start();
 	cm.loadPLY(av[1]); //TODO: add error handeling for when av[1] is not a valid filename
@@ -134,8 +131,8 @@ int main(int ac, char** av){
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	double* oneRingMeanFunctionValues;
 	cudaMallocManaged(&oneRingMeanFunctionValues, cm.getNumVertices()*sizeof(double));
-	blockSize = 8;
-	numBlocks = max(1, cm.getNumVertices() / blockSize);
+	int blockSize = ca.getIdealBlockSizeForProblemOfSize(cm.getNumVertices());
+	int numBlocks = max(1, cm.getNumVertices() / blockSize);
 	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << cm.getNumVertices() << ")" << std::endl;
 	getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
 		cm.getNumVertices(), 
@@ -150,7 +147,7 @@ int main(int ac, char** av){
 		oneRingMeanFunctionValues
 	);
 	cudaDeviceSynchronize();
-	printOneRingMeanFunctionValues(cm.getNumVertices(), oneRingMeanFunctionValues);
+	//printOneRingMeanFunctionValues(cm.getNumVertices(), oneRingMeanFunctionValues);
 	ct_Calculating.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;

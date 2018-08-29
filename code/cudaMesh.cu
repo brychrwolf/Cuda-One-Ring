@@ -6,10 +6,16 @@
 #include <vector>
 
 #include "cudaMesh.cuh"
+#include "cudaAccess.cuh"
 
 //TODO: Only loads PLY files, should support other file types!
 
 CudaMesh::CudaMesh(){
+	//TODO: implement
+}
+
+CudaMesh::CudaMesh(CudaAccess* acc){
+	ca = acc;
 }
 
 CudaMesh::~CudaMesh(){
@@ -355,8 +361,7 @@ void CudaMesh::flattenSets(){
 /* Pre-Calculation */
 void CudaMesh::preCalculateEdgeLengths(){
 	cudaMallocManaged(&edgeLengths, numAdjacentVertices*sizeof(double));
-	//TODO: Move blockSize and numBlocks calculation to CudaAccess
-	int blockSize = 32;
+	int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numAdjacentVertices);
 	int numBlocks = max(1, numAdjacentVertices / blockSize);
 	std::cout << "getEdgeLengths<<<" << numBlocks << ", " << blockSize <<">>(" << numAdjacentVertices << ")" << std::endl;
 	kernel_getEdgeLengths<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, flat_adjacentVertices, adjacentVertices_runLength, vertices, edgeLengths);
@@ -426,7 +431,7 @@ double cuda_l2norm_diff(int vi, int v0, double* vertices){
 
 void CudaMesh::preCalculateMinEdgeLength(){
 	cudaMallocManaged(&minEdgeLength, numVertices*sizeof(double));
-	int blockSize = 8;
+	int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numVertices);
 	int numBlocks = max(1, numVertices / blockSize);
 	std::cout << "getMinEdgeLength<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
 	kernel_getMinEdgeLength<<<numBlocks, blockSize>>>(numAdjacentVertices, numVertices, adjacentVertices_runLength, vertices, edgeLengths, minEdgeLength);
