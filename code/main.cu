@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cfloat>
+#include <iomanip>
 #include <iostream>
 #include <map>
 
@@ -45,14 +46,14 @@ int main(int ac, char** av){
 		ca.printCUDAProps();
 	}
 	
-	CudaTimer ct_LoadingMesh;
-	CudaTimer ct_BuildingTables;
-		CudaTimer ct_BuildingSets;
-		CudaTimer ct_DetermineRunLengths;
-		CudaTimer ct_FlattenSets;
-		CudaTimer ct_PreCalEdgeLengths;
-		CudaTimer ct_preCalMinEdgeLength;
-	CudaTimer ct_Calculating;
+	CudaTimer timer_LoadingMesh;
+	CudaTimer timer_BuildingTables;
+		CudaTimer timer_BuildingSets;
+		CudaTimer timer_DetermineRunLengths;
+		CudaTimer timer_FlattenSets;
+		CudaTimer timer_PreCalEdgeLengths;
+		CudaTimer timer_preCalMinEdgeLength;
+	CudaTimer timer_Calculating;
 
 	/*************************************************************************/
 	std::cout << "****** CUDA Initialized." << std::endl;
@@ -65,11 +66,11 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	CudaMesh cm(&ca);
 	
-	ct_LoadingMesh.start();
+	timer_LoadingMesh.start();
 	cm.loadPLY(av[1]); //TODO: add error handeling for when av[1] is not a valid filename
 	//cm.loadPLY("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply");
 	//cm.loadPLY("../example_meshes/h.ply");
-	ct_LoadingMesh.stop();
+	timer_LoadingMesh.stop();
 	
 	//cm.printMesh();	
 	std::cout << "numVertices " << cm.getNumVertices() << " numFaces " << cm.getNumFaces() << std::endl;
@@ -82,42 +83,42 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/*************************************************************************/
-	ct_BuildingTables.start();
+	timer_BuildingTables.start();
 	std::cout << "Building set of faces by vertex, " << std::endl;
 	std::cout << "and table of adjacent vertices by vertex..." << std::endl;
-	ct_BuildingSets.start();
+	timer_BuildingSets.start();
 	cm.buildSets();
-	ct_BuildingSets.stop();
+	timer_BuildingSets.stop();
 	//cm.printAdjacentVertices();
 	//cm.printFacesOfVertices();
 	
 	std::cout << "Determine runlengths of adjacentVertices and facesofVertices" << std::endl;
-	ct_DetermineRunLengths.start();
+	timer_DetermineRunLengths.start();
 	cm.determineRunLengths();
-	ct_DetermineRunLengths.stop();
+	timer_DetermineRunLengths.stop();
 	//cm.printAdjacentVertices_RunLength();
 	//cm.printFacesOfVertices_RunLength();
 	
 	std::cout << "Flatten adjacentVerticies and facesOfVertices" << std::endl;
-	ct_FlattenSets.start();
+	timer_FlattenSets.start();
 	cm.flattenSets();
-	ct_FlattenSets.stop();
+	timer_FlattenSets.stop();
 	//cm.printFlat_AdjacentVertices();
 	//cm.printFlat_FacesOfVertices();
 	
 	std::cout << "Precalculate Edge Lengths" << std::endl;
-	ct_PreCalEdgeLengths.start();
+	timer_PreCalEdgeLengths.start();
 	cm.preCalculateEdgeLengths();
-	ct_PreCalEdgeLengths.stop();
+	timer_PreCalEdgeLengths.stop();
 	//cm.printEdgeLengths();
 	
 	std::cout << "Precalculate minimum edge length among adjacent vertices..." << std::endl;
-	ct_preCalMinEdgeLength.start();
+	timer_preCalMinEdgeLength.start();
 	cm.preCalculateMinEdgeLength();
-	ct_preCalMinEdgeLength.stop();
+	timer_preCalMinEdgeLength.stop();
 	//cm.printMinEdgeLength();
 	
-	ct_BuildingTables.stop();
+	timer_BuildingTables.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
 	/*************************************************************************/
@@ -127,7 +128,7 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*************************************************************************/
-	ct_Calculating.start();
+	timer_Calculating.start();
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	double* oneRingMeanFunctionValues;
 	cudaMallocManaged(&oneRingMeanFunctionValues, cm.getNumVertices()*sizeof(double));
@@ -148,7 +149,7 @@ int main(int ac, char** av){
 	);
 	cudaDeviceSynchronize();
 	//printOneRingMeanFunctionValues(cm.getNumVertices(), oneRingMeanFunctionValues);
-	ct_Calculating.stop();
+	timer_Calculating.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/*************************************************************************/
@@ -159,14 +160,14 @@ int main(int ac, char** av){
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
 	std::cout << "Elapsed times:" << std::endl;
-	std::cout << "LoadingMesh\t" << ct_LoadingMesh.getElapsedTime() << std::endl;
-	std::cout << "BuildingTables\t" << ct_BuildingTables.getElapsedTime() << std::endl;
-	std::cout << "\tBuildingSets\t\t" << ct_BuildingSets.getElapsedTime() << std::endl;
-	std::cout << "\tDetermineRunLengths\t" << ct_DetermineRunLengths.getElapsedTime() << std::endl;
-	std::cout << "\tFlattenSets\t\t" << ct_FlattenSets.getElapsedTime() << std::endl;
-	std::cout << "\tPreCalEdgeLengths\t" << ct_PreCalEdgeLengths.getElapsedTime() << std::endl;
-	std::cout << "\tPreCalMinEdgeLength\t" << ct_preCalMinEdgeLength.getElapsedTime() << std::endl;
-	std::cout << "Calculating\t" << ct_Calculating.getElapsedTime() << std::endl;
+	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;
+	std::cout << "BuildingTables\t" << std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingTables.getElapsedTime() << std::endl;
+	std::cout << "\tBuildingSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingSets.getElapsedTime() << std::endl;
+	std::cout << "\tDetermineRunLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_DetermineRunLengths.getElapsedTime() << std::endl;
+	std::cout << "\tFlattenSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_FlattenSets.getElapsedTime() << std::endl;
+	std::cout << "\tPreCalEdgeLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalEdgeLengths.getElapsedTime() << std::endl;
+	std::cout << "\tPreCalMinEdgeLength\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_preCalMinEdgeLength.getElapsedTime() << std::endl;
+	std::cout << "Calculating\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_Calculating.getElapsedTime() << std::endl;
 	/*************************************************************************/
 	std::cout << "****** Finished Analyzing..." << std::endl;
 	/*************************************************************************/
