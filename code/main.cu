@@ -41,10 +41,14 @@ int main(int ac, char** av){
 	CudaAccess ca;
 
 	printf("CUDA Device Query...\n");
-	if(ca.getDeviceCount() <= 0)
+	if(ca.getDeviceCount() <= 0){
 		std::cout << "No CUDA devices found." << std::endl;
-	else
+		std::cout << "TERMINATING NOW." << std::endl; //TODO: Support nonGPU?
+		return 0;
+	}else{
 		ca.printCUDAProps();
+	}
+
 	int blockSize;
 	int numBlocks;
 	

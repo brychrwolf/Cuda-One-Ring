@@ -6,10 +6,13 @@ CudaAccess::CudaAccess(){
 }
 
 void CudaAccess::updateDeviceCount(){
-	cudaGetDeviceCount(&deviceCount);
+	cudaError_t err = cudaGetDeviceCount(&deviceCount);
+	if(err != cudaSuccess)
+		deviceCount = 0;
 }
 
 int CudaAccess::getDeviceCount(){
+	printf("deviceCount %d\n", deviceCount);
 	return deviceCount;
 }
 
