@@ -26,6 +26,20 @@ __global__ void kernel_getEdgeLengths(int numAdjacentVertices, int numVertices, 
 __device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength);
 __device__ double cuda_l2norm_diff(int vi, int v0, double* vertices);
 __global__ void kernel_getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
+__global__ void kernel_getOneRingMeanFunctionValues(
+	int numVertices, 
+	int* adjacentVertices_runLength,
+	int* facesOfVertices_runLength, 
+	int* flat_facesOfVertices, 
+	int* flat_adjacentVertices,
+	int* faces, 
+	double* minEdgeLength, 
+	double* featureVectors, 
+	double* edgeLengths,
+	double* oneRingMeanFunctionValues
+);
+__device__ void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1);
+__device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
 
 class CudaMesh{
 		CudaAccess* ca;
@@ -44,6 +58,7 @@ class CudaMesh{
 		int* flat_facesOfVertices;
 		double* edgeLengths;
 		double* minEdgeLength;
+		double* oneRingMeanFunctionValues;
 
 	public:
 		CudaMesh();
@@ -66,6 +81,7 @@ class CudaMesh{
 		int* getFlat_facesOfVertices();
 		double* getEdgeLengths();
 		double* getMinEdgeLength();
+		double* getOneRingMeanFunctionValues();
 		
 		void setNumVertices(int upd);
 		void setNumFaces(int upd);
@@ -82,6 +98,7 @@ class CudaMesh{
 		void setFlat_facesOfVertices(int* upd);
 		void setEdgeLengths(double* upd);
 		void setMinEdgeLength(double* upd);
+		void setOneRingMeanFunctionValues(double* upd);
 		
 		/* IO */
 		void loadPLY(std::string fileName);
@@ -94,6 +111,7 @@ class CudaMesh{
 		void printFlat_FacesOfVertices();
 		void printEdgeLengths();
 		void printMinEdgeLength();
+		void printOneRingMeanFunctionValues();
 		
 		/* Build Tables */
 		void buildSets();
@@ -103,6 +121,9 @@ class CudaMesh{
 		/* Pre-Calculate */
 		void preCalculateEdgeLengths();
 		void preCalculateMinEdgeLength();
+		
+		/* Calculate */
+		void calculateOneRingMeanFunctionValues();
 };
 
 #endif // CUDAMESH_CUH

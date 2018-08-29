@@ -84,6 +84,10 @@ double* CudaMesh::getMinEdgeLength(){
 	return minEdgeLength;
 }
 
+double* CudaMesh::getOneRingMeanFunctionValues(){
+	return oneRingMeanFunctionValues;
+}
+
 
 
 void CudaMesh::setNumVertices(int upd){
@@ -144,6 +148,10 @@ void CudaMesh::setEdgeLengths(double* upd){
 
 void CudaMesh::setMinEdgeLength(double* upd){
 	minEdgeLength = upd;
+}
+
+void CudaMesh::setOneRingMeanFunctionValues(double* upd){
+	oneRingMeanFunctionValues = upd;
 }
 
 
@@ -295,6 +303,13 @@ void CudaMesh::printMinEdgeLength(){
 	std::cerr << std::endl;
 	for(int i = 0; i < numVertices; i++){
 		std::cerr << "minEdgeLength[" << i << "] " << minEdgeLength[i] << std::endl;
+	}
+}
+
+void CudaMesh::printOneRingMeanFunctionValues(){
+	std::cerr << std::endl;
+	for(int i = 0; i < numVertices; i++){
+		std::cerr << "oneRingMeanFunctionValues[" << i << "] " << oneRingMeanFunctionValues[i] << std::endl;
 	}
 }
 
@@ -452,5 +467,139 @@ void kernel_getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adja
 		}
 		//printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
 	}
+}
+
+void CudaMesh::calculateOneRingMeanFunctionValues(){
+	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
+	int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numVertices);
+	int numBlocks = max(1, numVertices / blockSize);
+	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
+	kernel_getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
+		numVertices, 
+		adjacentVertices_runLength, 
+		facesOfVertices_runLength, 
+		flat_facesOfVertices, 
+		flat_adjacentVertices, 
+		faces,
+		minEdgeLength,
+		featureVectors,
+		edgeLengths,
+		oneRingMeanFunctionValues
+	);
+	cudaDeviceSynchronize();
+}
+
+__global__
+void kernel_getOneRingMeanFunctionValues(
+	int numVertices, 
+	int* adjacentVertices_runLength,
+	int* facesOfVertices_runLength, 
+	int* flat_facesOfVertices, 
+	int* flat_adjacentVertices,
+	int* faces, 
+	double* minEdgeLength, 
+	double* featureVectors, 
+	double* edgeLengths,
+	double* oneRingMeanFunctionValues
+){
+	int global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
+	int stride = blockDim.x * gridDim.x; //32*3 = 96
+
+	double accuFuncVals = 0.0;
+	double accuArea = 0.0;
+
+	// Use all availble threads to do all numVertices as v0
+	for(int v0 = global_threadIndex; v0 < numVertices; v0 += stride){
+		int fi_begin = (v0 == 0 ? 0 : facesOfVertices_runLength[v0-1]);
+		for(int fi = fi_begin; fi < facesOfVertices_runLength[v0]; fi++){
+			//currFace->getFuncVal1RingSector( this, rMinDist, currArea, currFuncVal ); //ORS.307
+				//get1RingSectorConst();
+				int vi, vip1;
+				getViAndVip1FromV0andFi(v0, flat_facesOfVertices[fi], faces, vi, vip1);
+				//printf("[%d]\t[%d]\t%d\t%d\n", v0, flat_facesOfVertices[fi], vi, vip1);
+
+				//TODO: Ensure edges A, B, C are correct with v0, vi, vip1; also regarding funcVals later
+				//ORS.456
+				double lengthEdgeA = getEdgeLengthOfV0AndVi(vi, vip1, adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double lengthEdgeB = getEdgeLengthOfV0AndVi(v0, vip1, adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double lengthEdgeC = getEdgeLengthOfV0AndVi(v0, vi,   adjacentVertices_runLength, flat_adjacentVertices, edgeLengths);
+				double alpha = acos( ( lengthEdgeB*lengthEdgeB + lengthEdgeC*lengthEdgeC - lengthEdgeA*lengthEdgeA ) / ( 2*lengthEdgeB*lengthEdgeC ) );
+
+				double rNormDist = minEdgeLength[v0];
+				double lenCenterToA = lengthEdgeC;
+				double lenCenterToB = lengthEdgeB;
+			
+				//ORS.403 Area - https://en.wikipedia.org/wiki/Circular_sector#Area
+				//*changed from m to r to skip "passthrough" see ORS.372
+				double rSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
+
+				//ORS.412 Function values interpolated f'_i and f'_{i+1}
+				// Compute the third angle using alpha/2.0 and 90°:
+				double beta = ( M_PI - alpha ) / 2.0;
+				// Law of sines
+				double diameterCircum = rNormDist / sin( beta ); // Constant ratio equal longest edge
+
+				//ORS.420 Distances for interpolation
+				double mRatioCA = diameterCircum / lenCenterToA;
+				double mRatioCB = diameterCircum / lenCenterToB;
+				// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
+				double mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
+
+				//ORS.357 Fetch function values
+				double funcValCenter = featureVectors[v0];
+				double funcValA = featureVectors[vi];
+				double funcValB = featureVectors[vip1];
+
+				//ORS.365 Interpolate
+				double funcValInterpolA = funcValCenter*(1.0-mRatioCA) + funcValA*mRatioCA;
+				double funcValInterpolB = funcValCenter*(1.0-mRatioCB) + funcValB*mRatioCB;
+
+				//ORS.369 Compute average function value at the center of gravity of the circle sector
+				double rSectorFuncVal = funcValCenter*( 1.0 - mCenterOfGravityDist ) +
+								 ( funcValInterpolA + funcValInterpolB ) * mCenterOfGravityDist / 2.0;
+
+			double currFuncVal = rSectorFuncVal;
+			double currArea = rSectorArea;
+			
+			//ORS.309
+			accuFuncVals += currFuncVal * currArea;
+			accuArea += currArea;
+		}
+
+		oneRingMeanFunctionValues[v0] = accuFuncVals / accuArea;
+		//if(global_threadIndex % 1000 == 0)
+		//	printf("oneRingMeanFunctionValues[%d] %f\n", v0, oneRingMeanFunctionValues[v0]);
+	}
+}
+
+__device__
+void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1){
+	//printf("faces[%d*3+{0,1,2}] {%d, %d, %d}\n", fi, faces[(fi*3)+0], faces[(fi*3)+1], faces[(fi*3)+2]);
+	bool isViAssigned = false;
+	for(int i = 0; i < 3; i++){ // for each vertex in this face (a, b, c)
+		int v = faces[fi*3+i];
+		if(v != v0){ // exclude v0
+			if(isViAssigned){
+				vip1 = v; // assign the other corner to vip1
+			}else{
+				vi = v; // assign the first corner to vi
+				isViAssigned = true;
+			}
+		}
+	}
+}
+
+__device__
+double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths){
+	//TODO: Error handling?
+	int av_begin = (v0 == 0 ? 0 : adjacentVertices_runLength[v0-1]);
+	double edgeLength;
+	for(int av = av_begin; av < adjacentVertices_runLength[v0]; av++){
+		if(flat_adjacentVertices[av] == vi){
+			edgeLength = edgeLengths[av];
+			break;
+		}
+	}
+	return edgeLength;
 }
 
