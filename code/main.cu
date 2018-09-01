@@ -36,6 +36,7 @@ int main(int ac, char** av){
 		CudaTimer timer_BuildingSets;
 		CudaTimer timer_DetermineRunLengths;
 		CudaTimer timer_FlattenSets;
+	CudaTimer timer_PreCalculations;
 		CudaTimer timer_PreCalEdgeLengths;
 		CudaTimer timer_preCalMinEdgeLength;
 	CudaTimer timer_Calculating;
@@ -93,7 +94,18 @@ int main(int ac, char** av){
 	
 	std::cout << "Free non-flat sets" << std::endl;
 	cm.freeSets();
+	
+	timer_BuildingTables.stop();
+	/*************************************************************************/
+	std::cout << "****** Finished Building Tables." << std::endl;
+	/*************************************************************************/
 
+
+
+	/*************************************************************************/
+	std::cout << std::endl << "****** Begin Pre-Calculating..." << std::endl;
+	/*************************************************************************/
+	timer_PreCalculations.start();
 	std::cout << "Precalculate Edge Lengths" << std::endl;
 	timer_PreCalEdgeLengths.start();
 	cm.preCalculateEdgeLengths();
@@ -105,8 +117,8 @@ int main(int ac, char** av){
 	cm.preCalculateMinEdgeLength();
 	timer_preCalMinEdgeLength.stop();
 	//cm.printMinEdgeLength();
-	
-	timer_BuildingTables.stop();
+
+	timer_PreCalculations.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
 	/*************************************************************************/
@@ -136,6 +148,7 @@ int main(int ac, char** av){
 	std::cout << "\tBuildingSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingSets.getElapsedTime() << std::endl;
 	std::cout << "\tDetermineRunLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_DetermineRunLengths.getElapsedTime() << std::endl;
 	std::cout << "\tFlattenSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_FlattenSets.getElapsedTime() << std::endl;
+	std::cout << "PreCalculations\t" << std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalculations.getElapsedTime() << std::endl;
 	std::cout << "\tPreCalEdgeLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalEdgeLengths.getElapsedTime() << std::endl;
 	std::cout << "\tPreCalMinEdgeLength\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_preCalMinEdgeLength.getElapsedTime() << std::endl;
 	std::cout << "Calculating\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_Calculating.getElapsedTime() << std::endl;
