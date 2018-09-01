@@ -117,6 +117,7 @@ class CudaMesh{
 		void buildSets();
 		void determineRunLengths();
 		void flattenSets();
+		void freeSets();
 		
 		/* Pre-Calculate */
 		void preCalculateEdgeLengths();

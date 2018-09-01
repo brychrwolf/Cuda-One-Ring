@@ -371,6 +371,11 @@ void CudaMesh::flattenSets(){
 	}
 }
 
+void CudaMesh::freeSets(){
+	std::vector<std::set<int>>().swap(adjacentVertices);
+	std::vector<std::set<int>>().swap(facesOfVertices);
+}
+
 
 
 /* Pre-Calculation */

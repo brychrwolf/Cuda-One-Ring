@@ -91,6 +91,9 @@ int main(int ac, char** av){
 	//cm.printFlat_AdjacentVertices();
 	//cm.printFlat_FacesOfVertices();
 	
+	std::cout << "Free non-flat sets" << std::endl;
+	cm.freeSets();
+
 	std::cout << "Precalculate Edge Lengths" << std::endl;
 	timer_PreCalEdgeLengths.start();
 	cm.preCalculateEdgeLengths();
@@ -116,7 +119,7 @@ int main(int ac, char** av){
 	timer_Calculating.start();
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	cm.calculateOneRingMeanFunctionValues();
-	cm.printOneRingMeanFunctionValues();
+	//cm.printOneRingMeanFunctionValues();
 	timer_Calculating.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
