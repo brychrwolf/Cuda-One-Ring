@@ -1,16 +1,16 @@
-main:
-	nvcc main.cu cudaAccess.cu cudaMesh.cu cudaTimer.cu -o main
+OBJECTS = main.o cudaAccess.o cudaMesh.o cudaTimer.o
 
-lib:
-	nvcc -c		main.cu			-o main.o
-	
-	nvcc -c		cudaAccess.cu	-o cudaAccess.o
-	nvcc -c		cudaMesh.cu		-o cudaMesh.o
-	nvcc -c		cudaTimer.cu	-o cudaTimer.o
+main: $(OBJECTS)
+	nvcc $(OBJECTS) -o main
 
-	ar rcs 	libcuda.a		cudaAccess.o cudaMesh.o cudaTimer.o
+lib: $(OBJECTS)
+	nvcc -dlink $(OBJECTS) -o gpuCode.o
+	#TODO: here on Manjaro, elsewhere on others?
+	g++ gpuCode.o $(OBJECTS) -L/opt/cuda/lib64 -lcudart -o main-lib
 
-	nvcc	main.o		-lcuda		-o main-lib
+#Compile all cu files into objects
+%.o: %.cu
+	nvcc -dc $< -o $@
 
 clean:
-	rm -f *.o *.a *.linkinfo a.out *~ main main-lib
+	rm -f *.o *.a main main-lib
