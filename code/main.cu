@@ -52,10 +52,12 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	CudaMesh cm(&ca);
 	
+	std::string plyFileName = "../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
+	//std::string plyFileName = "../example_meshes/h.ply";
+	if(ac > 1) plyFileName = av[1];
+
 	timer_LoadingMesh.start();
-	cm.loadPLY(av[1]); //TODO: add error handeling for when av[1] is not a valid filename
-	//cm.loadPLY("../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply");
-	//cm.loadPLY("../example_meshes/h.ply");
+	cm.loadPLY(plyFileName);
 	timer_LoadingMesh.stop();
 	
 	//cm.printMesh();	
