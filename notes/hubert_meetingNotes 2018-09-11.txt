@@ -1,0 +1,19 @@
+
+Keep everythign local to my function. *make note about how to genrealize CUDA acceses, vs huberts decision*
+build as library, only link to it in mesh/Makefile -> therefore pre-compiling in cuda directory will be required
+must update .pro file and mesh/makefile
+mesh.cpp will use CUDA DEFINES as found in qmake's .pro file
+
+first visually verify output of algorithm with gigamesh
+	load example file
+	calculate distance to plane (or MSII)
+	save FunctionValues to .mat file
+	run Gigamesh algorithm once
+	save new FunctionCalues to .mat file
+	load .mat file into algorithm
+	process once
+	save new FunctionValues to .mat file...
+	compare two processed files
+	Visually compare two processed files.
+	
+	synthetic large flat plane, single high vetex, see gaussion curve after several iterations
