@@ -1,2 +1,2 @@
-grep -rnw 'GigaMesh_Source' -e 's1RingSectorPrecomp'
+grep -rnw '..' -e 'initializeShader'
 

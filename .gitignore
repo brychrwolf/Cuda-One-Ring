@@ -3,3 +3,6 @@ thesis.dvi
 thesis.pdf
 code/main
 code/main.exe
+code/main-lib
+*.o
+*.a
