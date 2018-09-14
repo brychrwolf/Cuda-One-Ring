@@ -1,16 +1,21 @@
-OBJECTS = main.o cudaAccess.o cudaMesh.o cudaTimer.o
+OBJECTS = cudaAccess.o cudaMesh.o cudaTimer.o
 
-main: $(OBJECTS)
-	nvcc $(OBJECTS) -o main
+main: $(OBJECTS) main.o
+	nvcc $(OBJECTS) main.o -o main
 
-lib: $(OBJECTS)
+obj: $(OBJECTS) main.o
+	nvcc -dlink $(OBJECTS) main.o -o gpuCode.o
+	#TODO: cuda located here on Manjaro, elsewhere on others?
+	g++ $(OBJECTS) main.o gpuCode.o -L/opt/cuda/lib64 -lcudart -o obj
+
+lib: $(OBJECTS) main.cpp
 	nvcc -dlink $(OBJECTS) -o gpuCode.o
-	#TODO: here on Manjaro, elsewhere on others?
-	g++ gpuCode.o $(OBJECTS) -L/opt/cuda/lib64 -lcudart -o main-lib
+	nvcc -lib $(OBJECTS) gpuCode.o -o libcudamesh.a
+	g++ -c -I. -I/opt/cuda/include main.cpp -o main.o
+	g++ main.o libcudamesh.a -L/opt/cuda/lib64 -lcudart -o lib
 
-#Compile all cu files into objects
 %.o: %.cu
 	nvcc -dc $< -o $@
 
 clean:
-	rm -f *.o *.a main main-lib
+	rm -f *.o *.a main obj lib libcudamesh.so
