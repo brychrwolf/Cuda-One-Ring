@@ -56,13 +56,13 @@ int main(int ac, char** av){
 	
 	//TODO: guess funcValsFileName from plyFileName
 	std::string plyFileName = "../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
-	std::string funcValsFileName = "../experiments/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals.txt";
+	std::string funcValsFileName = "../experiments/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals";
 	//std::string plyFileName = "../example_meshes/h.ply";
 	if(ac > 1) plyFileName = av[1];
 
 	timer_LoadingMesh.start();
 	cm.loadPLY(plyFileName);
-	cm.loadFunctionValues(funcValsFileName);
+	cm.loadFunctionValues(funcValsFileName+".txt");
 	timer_LoadingMesh.stop();
 	
 	//cm.printMesh();	
@@ -149,6 +149,8 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
+	cm.writeFunctionValues(funcValsFileName+"_1iter_libcudamesh.txt");
+
 	std::cout << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;
 	std::cout << "BuildingTables\t" << std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingTables.getElapsedTime() << std::endl;

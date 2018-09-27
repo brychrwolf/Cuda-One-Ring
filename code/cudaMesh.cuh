@@ -103,6 +103,7 @@ class CudaMesh{
 		/* IO */
 		void loadPLY(std::string fileName);
 		void loadFunctionValues(std::string fileName);
+		void writeFunctionValues(std::string fileName);
 		void printMesh();
 		void printFacesOfVertices();
 		void printAdjacentVertices();

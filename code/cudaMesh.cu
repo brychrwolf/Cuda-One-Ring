@@ -246,6 +246,13 @@ void CudaMesh::loadFunctionValues(std::string fileName){
 	}
 }
 
+void CudaMesh::writeFunctionValues(std::string fileName){
+	std::ofstream outfile(fileName);
+	for(int vi = 0; vi < numVertices; vi++)
+		outfile << vi << " " << oneRingMeanFunctionValues[vi] << std::endl;
+	outfile.close();
+}
+
 
 
 void CudaMesh::printMesh(){
