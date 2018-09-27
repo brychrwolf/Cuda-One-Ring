@@ -1,0 +1,58 @@
+[Mesh::funcVertMedianOneRing] Minimal edge length: 0.00281069 mm (unit assumed).
+[Mesh::funcVertMedianOneRing] 10 iterations corresponds to a filter size (radius) of 0.0281069 mm (unit assumed).
+[Mesh] Vertex function value 1-ring mean, 10 iterations --- Begin.
+[Mesh::funcVertMedianOneRing] Iteration 1 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 1 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 1 Relative changes to the function vales:   8.93997e-05
+[Mesh::funcVertMedianOneRing] Iteration 2 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 2 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 2 Relative changes to the function vales:   8.73651e-05
+[Mesh] Vertex function value 1-ring mean, 10 iterations | 22% | 2 sec elapsed - remaining: 7.1 sec
+[Mesh::funcVertMedianOneRing] Iteration 3 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 3 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 3 Relative changes to the function vales:   8.54636e-05
+[Mesh::funcVertMedianOneRing] Iteration 4 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 4 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 4 Relative changes to the function vales:   8.3682e-05
+[Mesh] Vertex function value 1-ring mean, 10 iterations | 44.3% | 4 sec elapsed - remaining: 5 sec
+[Mesh::funcVertMedianOneRing] Iteration 5 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 5 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 5 Relative changes to the function vales:   8.20106e-05
+[Mesh::funcVertMedianOneRing] Iteration 6 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 6 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 6 Relative changes to the function vales:   8.04407e-05
+[Mesh] Vertex function value 1-ring mean, 10 iterations | 66.6% | 6 sec elapsed - remaining: 3 sec
+[Mesh::funcVertMedianOneRing] Iteration 7 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 7 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 7 Relative changes to the function vales:   7.89647e-05
+[Mesh::funcVertMedianOneRing] Iteration 8 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 8 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 8 Relative changes to the function vales:   7.75751e-05
+[Mesh::funcVertMedianOneRing] Iteration 9 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 9 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 9 Relative changes to the function vales:   7.62639e-05
+[Mesh] Vertex function value 1-ring mean, 10 iterations | 90.3% | 8 sec elapsed - remaining: 0.9 sec
+[Mesh::funcVertMedianOneRing] Iteration 10 Vertices processed: 397210
+[Mesh::funcVertMedianOneRing] Iteration 10 Vertices ignored:   0
+[Mesh::funcVertMedianOneRing] Iteration 10 Relative changes to the function vales:   7.50245e-05
+[Mesh::funcVertMedianOneRing] took 8.8601 seconds.
+[Mesh] Vertex function value 1-ring mean, 10 iterations --- Done.
+[Mesh::changedVertFuncVal] Begin.
+[Mesh::changedVertFuncVal] Time: 0.078288 seconds.
+[MeshGL::vboRemoveBuffer] will delete 15888400 bytes (15.1524 MBytes) by changedVertFuncVal
+[MeshGL::vboRemoveBuffer] Buffer 5 already removed - called by changedVertFuncVal
+[MeshGL::vboRemoveBuffer] Buffer 6 already removed - called by changedVertFuncVal
+[MeshGL::vboPrepareVerticesStriped] sizeof( grVertexStripeElment ): 40 bytes.
+[MeshGL::vboAddBuffer] add 15888400 bytes - 15 MBytes by vboPrepareVerticesStriped
+[MeshGL::vboPrepareVerticesStriped] Time Vertices: 0.257705 seconds.
+[Mesh::getFuncValuesMinMax] min: 0.213111 max: 5.51756 valueSet: 1
+[MeshGL::getFuncValMinMaxUser] min Value:        0.213111
+[MeshGL::getFuncValMinMaxUser] max Value:        5.51756
+[Mesh::getVertexListValidFuncVal] Vertices with finite values:   397192
+[Mesh::getVertexListValidFuncVal] Vertices with infinite values: 18
+[Mesh::getVertexListValidFuncVal] make vertex vector time: 0.003288 seconds.
+[Mesh::getFuncValuesMinMaxQuantil] Quantil Min: 0.625961 at position: 3972
+[Mesh::getFuncValuesMinMaxQuantil] Quantil Max: 5.38445 at position: 393219
+[MeshGL::getFuncValMinMaxUser] min Value:    0.625961 (Quantile)
+[MeshGL::getFuncValMinMaxUser] max Value:    5.38445 (Quantile)
+
