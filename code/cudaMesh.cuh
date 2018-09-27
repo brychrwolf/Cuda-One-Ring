@@ -34,7 +34,7 @@ __global__ void kernel_getOneRingMeanFunctionValues(
 	int* flat_adjacentVertices,
 	int* faces, 
 	double* minEdgeLength, 
-	double* featureVectors, 
+	double* functionValues,
 	double* edgeLengths,
 	double* oneRingMeanFunctionValues
 );
@@ -46,7 +46,7 @@ class CudaMesh{
 		int numVertices;
 		int numFaces;
 		double* vertices;
-		double* featureVectors;
+		double* functionValues;
 		int* faces;
 		std::vector<std::set<int>> adjacentVertices;
 		std::vector<std::set<int>> facesOfVertices;
@@ -69,7 +69,7 @@ class CudaMesh{
 		int getNumVertices();
 		int getNumFaces();
 		double* getVertices();
-		double* getFeatureVectors();
+		double* getFunctionValues();
 		int* getFaces();
 		std::vector<std::set<int>> getAdjacentVertices();
 		std::vector<std::set<int>> getFacesOfVertices();
@@ -86,7 +86,7 @@ class CudaMesh{
 		void setNumVertices(int upd);
 		void setNumFaces(int upd);
 		void setVertices(double* upd);
-		void setFeatureVectors(double* upd);
+		void setFunctionValues(double* upd);
 		void setFaces(int* upd);
 		void setAdjacentVertices(std::vector<std::set<int>> upd);
 		void setFacesOfVertices(std::vector<std::set<int>> upd);
@@ -102,6 +102,7 @@ class CudaMesh{
 		
 		/* IO */
 		void loadPLY(std::string fileName);
+		void loadFunctionValues(std::string fileName);
 		void printMesh();
 		void printFacesOfVertices();
 		void printAdjacentVertices();

@@ -36,8 +36,8 @@ double* CudaMesh::getVertices(){
 	return vertices;
 }
 
-double* CudaMesh::getFeatureVectors(){
-	return featureVectors;
+double* CudaMesh::getFunctionValues(){
+	return functionValues;
 }
 
 int* CudaMesh::getFaces(){
@@ -102,8 +102,8 @@ void CudaMesh::setVertices(double* upd){
 	vertices = upd;
 }
 
-void CudaMesh::setFeatureVectors(double* upd){
-	featureVectors = upd;
+void CudaMesh::setFunctionValues(double* upd){
+	functionValues = upd;
 }
 
 void CudaMesh::setFaces(int* upd){
@@ -170,11 +170,6 @@ void CudaMesh::loadPLY(std::string fileName){
 
 	std::ifstream infile(fileName);
 	
-	// for Random Feature Vectors
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(-1.0, 1.0);
-
 	// read every line in the file
 	std::string line;
 	int lineNumber = 0;
@@ -206,7 +201,7 @@ void CudaMesh::loadPLY(std::string fileName){
 				inHeaderSection = false;
 				faceSectionBegin = lineNumber + 1 + numVertices;
 				cudaMallocManaged(&vertices, 3 * numVertices * sizeof(double));
-				cudaMallocManaged(&featureVectors, numVertices * sizeof(double));
+				cudaMallocManaged(&functionValues, numVertices * sizeof(double));
 				cudaMallocManaged(&faces, 3 * numFaces * sizeof(int));
 			}
 		}else if(lineNumber < faceSectionBegin){
@@ -214,8 +209,6 @@ void CudaMesh::loadPLY(std::string fileName){
 			vertices[vi*3 + 0] = coords[x_idx];
 			vertices[vi*3 + 1] = coords[y_idx];
 			vertices[vi*3 + 2] = coords[z_idx];
-			//TODO: Are feature vectors stored in PLY file? currently set to 1 or random
-			featureVectors[vi] = dis(gen);//1;
 			vi++;
 		}else{
 			std::vector<int> coords = split<int>(line);
@@ -225,6 +218,31 @@ void CudaMesh::loadPLY(std::string fileName){
 			fi++;
 		}
 		lineNumber++;
+	}
+}
+
+void CudaMesh::loadFunctionValues(std::string fileName){
+	//TODO: Complain if file doesn't exists
+	//TODO: Complain if file exists but not all functionValues get set
+	if(fileName == ""){
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_real_distribution<> dis(-1.0, 1.0);
+		for(int vi = 0; vi < numVertices; vi++)
+			functionValues[vi] = dis(gen); //1;
+		std::cerr << "functionValues set to random" << std::endl;
+		return;
+	}
+
+	std::ifstream infile(fileName);
+	std::string line;
+	int vi = 0;
+	while(std::getline(infile, line)){
+		if(line.substr(0, 1) == "#") continue;
+		std::vector<double> idsAndValues = split<double>(line);
+		functionValues[vi] = idsAndValues[1];
+		//if(vi % 1000 == 0) std::cerr << "functionValues[" << vi << "] " << functionValues[vi] << std::endl;
+		vi++;
 	}
 }
 
@@ -238,7 +256,7 @@ void CudaMesh::printMesh(){
 				std::cout << ", ";
 			std::cout << vertices[v*3+i];
 		}
-		std::cout << " featureVector = " << featureVectors[v] << std::endl;
+		std::cout << " functionValue = " << functionValues[v] << std::endl;
 	}
 	for(int f = 0; f < numFaces; f++)
 		std::cout << f << " = {" << faces[f*3+0] << ", " << faces[f*3+1] << ", " << faces[f*3+2] << "}" <<std::endl;
@@ -487,7 +505,7 @@ void CudaMesh::calculateOneRingMeanFunctionValues(){
 		flat_adjacentVertices, 
 		faces,
 		minEdgeLength,
-		featureVectors,
+		functionValues,
 		edgeLengths,
 		oneRingMeanFunctionValues
 	);
@@ -503,7 +521,7 @@ void kernel_getOneRingMeanFunctionValues(
 	int* flat_adjacentVertices,
 	int* faces, 
 	double* minEdgeLength, 
-	double* featureVectors, 
+	double* functionValues,
 	double* edgeLengths,
 	double* oneRingMeanFunctionValues
 ){
@@ -551,9 +569,9 @@ void kernel_getOneRingMeanFunctionValues(
 				double mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
 
 				//ORS.357 Fetch function values
-				double funcValCenter = featureVectors[v0];
-				double funcValA = featureVectors[vi];
-				double funcValB = featureVectors[vip1];
+				double funcValCenter = functionValues[v0];
+				double funcValA = functionValues[vi];
+				double funcValB = functionValues[vip1];
 
 				//ORS.365 Interpolate
 				double funcValInterpolA = funcValCenter*(1.0-mRatioCA) + funcValA*mRatioCA;

@@ -54,12 +54,15 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	CudaMesh cm(&ca);
 	
+	//TODO: guess funcValsFileName from plyFileName
 	std::string plyFileName = "../example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
+	std::string funcValsFileName = "../experiments/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals.txt";
 	//std::string plyFileName = "../example_meshes/h.ply";
 	if(ac > 1) plyFileName = av[1];
 
 	timer_LoadingMesh.start();
 	cm.loadPLY(plyFileName);
+	cm.loadFunctionValues(funcValsFileName);
 	timer_LoadingMesh.stop();
 	
 	//cm.printMesh();	
