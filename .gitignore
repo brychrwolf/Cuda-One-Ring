@@ -1,8 +1,11 @@
 thesis.log
 thesis.dvi
 thesis.pdf
+
 code/main
 code/main.exe
-code/main-lib
+code/obj
+code/lib
+code/libcudamesh.a
 *.o
 *.a
