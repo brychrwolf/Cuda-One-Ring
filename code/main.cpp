@@ -16,8 +16,6 @@
 // to engage GPUs when installed in hybrid system, run as 
 // optirun ./main
 
-void printOneRingMeanFunctionValues(int numVertices, double* oneRingMeanFunctionValues);
-
 int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Initializing CUDA..." << std::endl;
@@ -122,6 +120,7 @@ int main(int ac, char** av){
 	std::cout << "Precalculate minimum edge length among adjacent vertices..." << std::endl;
 	timer_preCalMinEdgeLength.start();
 	cm.preCalculateMinEdgeLength();
+	cm.preCalculateGlobalMinEdgeLength(); //TODO: Add own timer
 	timer_preCalMinEdgeLength.stop();
 	//cm.printMinEdgeLength();
 

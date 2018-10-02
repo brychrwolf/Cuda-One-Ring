@@ -23,12 +23,12 @@ class CudaAccess{
 		int getMajor(int d);
 		int getMinor(int d);
 		int getMultiProcessorCount(int d);
-		int getClockRate(int d);
-		int getMemoryClockRate(int d);
-		int getL2CacheSize(int d);
+		unsigned long getClockRate(int d);
+		unsigned long getMemoryClockRate(int d);
+		unsigned long getL2CacheSize(int d);
 		size_t getSharedMemPerMultiprocessor(int d);
 		size_t getTotalConstMem(int d);
-		int getManagedMemory(int d);
+		unsigned long getManagedMemory(int d);
 		int getWarpSize(int d);
 		int getMaxThreadsPerBlock(int d);
 		int getMaxThreadsPerMultiProcessor(int d);

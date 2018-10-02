@@ -59,15 +59,15 @@ int CudaAccess::getMultiProcessorCount(int d){
 	return deviceProperties[d].multiProcessorCount;
 }
 
-int CudaAccess::getClockRate(int d){
+unsigned long CudaAccess::getClockRate(int d){
 	return deviceProperties[d].clockRate;
 }
 
-int CudaAccess::getMemoryClockRate(int d){
+unsigned long CudaAccess::getMemoryClockRate(int d){
 	return deviceProperties[d].memoryClockRate;
 }
 
-int CudaAccess::getL2CacheSize(int d){
+unsigned long CudaAccess::getL2CacheSize(int d){
 	return deviceProperties[d].l2CacheSize;
 }
 
@@ -79,7 +79,7 @@ size_t CudaAccess::getTotalConstMem(int d){
 	return deviceProperties[d].totalConstMem;
 }
 
-int CudaAccess::getManagedMemory(int d){
+unsigned long CudaAccess::getManagedMemory(int d){
 	return deviceProperties[d].managedMemory;
 }
 
@@ -138,17 +138,17 @@ void CudaAccess::printCUDAProps(){
 		printf("\tPCI Bus.Device.Domain Ids:          %d.%d.%d\n",  deviceProperties[d].pciBusID,  deviceProperties[d].pciDeviceID,  deviceProperties[d].pciDomainID);
 		printf("\tCUDA Capability Major/Minor version:%d.%d\n", deviceProperties[d].major, deviceProperties[d].minor);
 		printf("\tNumber of multiprocessors:          %d\n",  deviceProperties[d].multiProcessorCount);
-		printf("\tClock rate (kHz):                   %d\n",  deviceProperties[d].clockRate);
-		printf("\tmemoryClockRate (kHz):              %d\n",  deviceProperties[d].memoryClockRate);
-		printf("\tl2CacheSize (bytes):                %d\n",  deviceProperties[d].l2CacheSize);
-		printf("\tsharedMemPerMultiprocessor (bytes): %d\n",  deviceProperties[d].sharedMemPerMultiprocessor); //size_t
-		printf("\ttotalConstMem (bytes):              %d\n",  deviceProperties[d].totalConstMem); //size_t
-		printf("\tmanagedMemory (T/F):                %d\n",  deviceProperties[d].managedMemory);
+		printf("\tClock rate (kHz):                   %lu\n",  deviceProperties[d].clockRate);
+		printf("\tmemoryClockRate (kHz):              %lu\n",  deviceProperties[d].memoryClockRate);
+		printf("\tl2CacheSize (bytes):                %lu\n",  deviceProperties[d].l2CacheSize);
+		printf("\tsharedMemPerMultiprocessor (bytes): %lu\n",  deviceProperties[d].sharedMemPerMultiprocessor); //size_t
+		printf("\ttotalConstMem (bytes):              %lu\n",  deviceProperties[d].totalConstMem); //size_t
+		printf("\tmanagedMemory (T/F):                %lu\n",  deviceProperties[d].managedMemory);
 		printf("\twarpSize (threads):                 %d\n",  deviceProperties[d].warpSize);
 		printf("\tmaxThreadsPerBlock:                 %d\n",  deviceProperties[d].maxThreadsPerBlock);
 		printf("\tmaxThreadsPerMultiProcessor:        %d\n",  deviceProperties[d].maxThreadsPerMultiProcessor);
 		printf("\tmaxThreadsDim[3]:                  [%d, %d, %d]\n",  deviceProperties[d].maxThreadsDim[0],  deviceProperties[d].maxThreadsDim[1],  deviceProperties[d].maxThreadsDim[2]);
-		printf("\tmaxGridSize[3]:                    [%d, %d, %d]\n",  deviceProperties[d].maxGridSize[0],  deviceProperties[d].maxGridSize[1],  deviceProperties[d].maxGridSize[2]);
+		printf("\tmaxGridSize[3]:                    [%lu, %d, %d]\n",  deviceProperties[d].maxGridSize[0],  deviceProperties[d].maxGridSize[1],  deviceProperties[d].maxGridSize[2]);
 	}
 	printf("\nMinimum Warp Size in system:        %d\n",  minWarpSize);
 	printf("Minimum Max Block Size in system:   %d\n",  minMaxBlockSize);

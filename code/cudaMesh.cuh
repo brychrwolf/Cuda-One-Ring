@@ -20,44 +20,47 @@ template std::vector<std::string> split<std::string>(std::string);
 template std::vector<int> split<int>(std::string);
 template std::vector<float> split<float>(std::string);
 template std::vector<double> split<double>(std::string);
+template std::vector<unsigned long> split<unsigned long>(std::string);
 
 // Kernels must be defined outside of the class
-__global__ void kernel_getEdgeLengths(int numAdjacentVertices, int numVertices, int* flat_adjacentVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths);
-__device__ int getV0FromRunLength(int numVertices, int av, int* adjacentVertices_runLength);
-__device__ double cuda_l2norm_diff(int vi, int v0, double* vertices);
-__global__ void kernel_getMinEdgeLength(int numAdjacentVertices, int numVertices, int* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
+__global__ void kernel_getEdgeLengths(unsigned long numAdjacentVertices, unsigned long numVertices, unsigned long* flat_adjacentVertices, unsigned long* adjacentVertices_runLength, double* vertices, double* edgeLengths);
+__device__ unsigned long getV0FromRunLength(unsigned long numVertices, unsigned long av, unsigned long* adjacentVertices_runLength);
+__device__ double cuda_l2norm_diff(unsigned long vi, unsigned long v0, double* vertices);
+__global__ void kernel_getMinEdgeLength(unsigned long numAdjacentVertices, unsigned long numVertices, unsigned long* adjacentVertices_runLength, double* vertices, double* edgeLengths, double* minEdgeLength);
 __global__ void kernel_getOneRingMeanFunctionValues(
-	int numVertices, 
-	int* adjacentVertices_runLength,
-	int* facesOfVertices_runLength, 
-	int* flat_facesOfVertices, 
-	int* flat_adjacentVertices,
-	int* faces, 
-	double* minEdgeLength, 
+	unsigned long numVertices, 
+	unsigned long* adjacentVertices_runLength,
+	unsigned long* facesOfVertices_runLength, 
+	unsigned long* flat_facesOfVertices, 
+	unsigned long* flat_adjacentVertices,
+	unsigned long* faces, 
+	double* minEdgeLength,
+	double globalMinEdgeLength, 
 	double* functionValues,
 	double* edgeLengths,
 	double* oneRingMeanFunctionValues
 );
-__device__ void getViAndVip1FromV0andFi(int v0, int fi, int* faces, int& vi, int& vip1);
-__device__ double getEdgeLengthOfV0AndVi(int v0, int vi, int* adjacentVertices_runLength, int* flat_adjacentVertices, double* edgeLengths);
+__device__ void getViAndVip1FromV0andFi(unsigned long v0, unsigned long fi, unsigned long* faces, unsigned long& vi, unsigned long& vip1);
+__device__ double getEdgeLengthOfV0AndVi(unsigned long v0, unsigned long vi, unsigned long* adjacentVertices_runLength, unsigned long* flat_adjacentVertices, double* edgeLengths);
 
 class CudaMesh{
 		CudaAccess* ca;
-		int numVertices;
-		int numFaces;
+		unsigned long numVertices;
+		unsigned long numFaces;
 		double* vertices;
 		double* functionValues;
-		int* faces;
-		std::vector<std::set<int>> adjacentVertices;
-		std::vector<std::set<int>> facesOfVertices;
-		int* adjacentVertices_runLength;
-		int* facesOfVertices_runLength;
-		int numAdjacentVertices;
-		int numFacesOfVertices;
-		int* flat_adjacentVertices;
-		int* flat_facesOfVertices;
+		unsigned long* faces;
+		std::vector<std::set<unsigned long>> adjacentVertices;
+		std::vector<std::set<unsigned long>> facesOfVertices;
+		unsigned long* adjacentVertices_runLength;
+		unsigned long* facesOfVertices_runLength;
+		unsigned long numAdjacentVertices;
+		unsigned long numFacesOfVertices;
+		unsigned long* flat_adjacentVertices;
+		unsigned long* flat_facesOfVertices;
 		double* edgeLengths;
 		double* minEdgeLength;
+		double globalMinEdgeLength;
 		double* oneRingMeanFunctionValues;
 
 	public:
@@ -66,38 +69,40 @@ class CudaMesh{
 		~CudaMesh();
 		
 		/* Getters and Setters */
-		int getNumVertices();
-		int getNumFaces();
+		unsigned long getNumVertices();
+		unsigned long getNumFaces();
 		double* getVertices();
 		double* getFunctionValues();
-		int* getFaces();
-		std::vector<std::set<int>> getAdjacentVertices();
-		std::vector<std::set<int>> getFacesOfVertices();
-		int* getAdjacentVertices_runLength();
-		int* getFacesOfVertices_runLength();
-		int getNumAdjacentVertices();
-		int getNumFacesOfVertices();
-		int* getFlat_adjacentVertices();
-		int* getFlat_facesOfVertices();
+		unsigned long* getFaces();
+		std::vector<std::set<unsigned long>> getAdjacentVertices();
+		std::vector<std::set<unsigned long>> getFacesOfVertices();
+		unsigned long* getAdjacentVertices_runLength();
+		unsigned long* getFacesOfVertices_runLength();
+		unsigned long getNumAdjacentVertices();
+		unsigned long getNumFacesOfVertices();
+		unsigned long* getFlat_adjacentVertices();
+		unsigned long* getFlat_facesOfVertices();
 		double* getEdgeLengths();
 		double* getMinEdgeLength();
+		double getGlobalMinEdgeLength();
 		double* getOneRingMeanFunctionValues();
 		
-		void setNumVertices(int upd);
-		void setNumFaces(int upd);
+		void setNumVertices(unsigned long upd);
+		void setNumFaces(unsigned long upd);
 		void setVertices(double* upd);
 		void setFunctionValues(double* upd);
-		void setFaces(int* upd);
-		void setAdjacentVertices(std::vector<std::set<int>> upd);
-		void setFacesOfVertices(std::vector<std::set<int>> upd);
-		void setAdjacentVertices_runLength(int* upd);
-		void setFacesOfVertices_runLength(int* upd);
-		void setNumAdjacentVertices(int upd);
-		void setNumFacesOfVertices(int upd);
-		void setFlat_adjacentVertices(int* upd);
-		void setFlat_facesOfVertices(int* upd);
+		void setFaces(unsigned long* upd);
+		void setAdjacentVertices(std::vector<std::set<unsigned long>> upd);
+		void setFacesOfVertices(std::vector<std::set<unsigned long>> upd);
+		void setAdjacentVertices_runLength(unsigned long* upd);
+		void setFacesOfVertices_runLength(unsigned long* upd);
+		void setNumAdjacentVertices(unsigned long upd);
+		void setNumFacesOfVertices(unsigned long upd);
+		void setFlat_adjacentVertices(unsigned long* upd);
+		void setFlat_facesOfVertices(unsigned long* upd);
 		void setEdgeLengths(double* upd);
 		void setMinEdgeLength(double* upd);
+		void setGlobalMinEdgeLength(double upd);
 		void setOneRingMeanFunctionValues(double* upd);
 		
 		/* IO */
@@ -124,6 +129,7 @@ class CudaMesh{
 		/* Pre-Calculate */
 		void preCalculateEdgeLengths();
 		void preCalculateMinEdgeLength();
+		void preCalculateGlobalMinEdgeLength();
 		
 		/* Calculate */
 		void calculateOneRingMeanFunctionValues();
