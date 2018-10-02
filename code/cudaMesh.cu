@@ -239,7 +239,7 @@ void CudaMesh::loadFunctionValues(std::string fileName){
 		std::uniform_real_distribution<> dis(-1.0, 1.0);
 		for(unsigned long vi = 0; vi < numVertices; vi++)
 			functionValues[vi] = dis(gen); //1;
-		std::cerr << "functionValues set to random" << std::endl;
+		std::cout << "functionValues set to random" << std::endl;
 		return;
 	}
 
@@ -279,71 +279,71 @@ void CudaMesh::printMesh(){
 }
 
 void CudaMesh::printAdjacentVertices(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "adjacentVertices[" << i << "] ";
+		std::cout << "adjacentVertices[" << i << "] ";
 		for(int elem : adjacentVertices[i])
-			std::cerr << elem << " ";
-		std::cerr << std::endl;
+			std::cout << elem << " ";
+		std::cout << std::endl;
 	}
 }
 
 void CudaMesh::printFacesOfVertices(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "facesOfVertices[" << i << "] ";
+		std::cout << "facesOfVertices[" << i << "] ";
 		for(int elem : facesOfVertices[i])
-			std::cerr << elem << " ";
-		std::cerr << std::endl;
+			std::cout << elem << " ";
+		std::cout << std::endl;
 	}
 }
 
 void CudaMesh::printAdjacentVertices_RunLength(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "adjacentVertices_runLength[" << i << "] " << adjacentVertices_runLength[i] << std::endl;
+		std::cout << "adjacentVertices_runLength[" << i << "] " << adjacentVertices_runLength[i] << std::endl;
 	}
 }
 
 void CudaMesh::printFacesOfVertices_RunLength(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "facesOfVertices_runLength[" << i << "] " << facesOfVertices_runLength[i] << std::endl;
+		std::cout << "facesOfVertices_runLength[" << i << "] " << facesOfVertices_runLength[i] << std::endl;
 	}
 }
 
 void CudaMesh::printFlat_AdjacentVertices(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numAdjacentVertices; i++){
-		std::cerr << "flat_adjacentVertices[" << i << "] " << flat_adjacentVertices[i] << std::endl;
+		std::cout << "flat_adjacentVertices[" << i << "] " << flat_adjacentVertices[i] << std::endl;
 	}
 }
 
 void CudaMesh::printFlat_FacesOfVertices(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numFacesOfVertices; i++){
-		std::cerr << "flat_facesOfVertices[" << i << "] " << flat_facesOfVertices[i] << std::endl;
+		std::cout << "flat_facesOfVertices[" << i << "] " << flat_facesOfVertices[i] << std::endl;
 	}
 }
 
 void CudaMesh::printEdgeLengths(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numAdjacentVertices; i++){
-		std::cerr << "edgeLengths[" << i << "] " << edgeLengths[i] << std::endl;
+		std::cout << "edgeLengths[" << i << "] " << edgeLengths[i] << std::endl;
 	}
 }
 
 void CudaMesh::printMinEdgeLength(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "minEdgeLength[" << i << "] " << minEdgeLength[i] << std::endl;
+		std::cout << "minEdgeLength[" << i << "] " << minEdgeLength[i] << std::endl;
 	}
 }
 
 void CudaMesh::printOneRingMeanFunctionValues(){
-	std::cerr << std::endl;
+	std::cout << std::endl;
 	for(unsigned long i = 0; i < numVertices; i++){
-		std::cerr << "oneRingMeanFunctionValues[" << i << "] " << oneRingMeanFunctionValues[i] << std::endl;
+		std::cout << "oneRingMeanFunctionValues[" << i << "] " << oneRingMeanFunctionValues[i] << std::endl;
 	}
 }
 
@@ -441,9 +441,9 @@ void kernel_getEdgeLengths(unsigned long numAdjacentVertices, unsigned long numV
 		unsigned long vi = flat_adjacentVertices[av];
 		unsigned long v0 = getV0FromRunLength(numVertices, av, adjacentVertices_runLength);
 		edgeLengths[av] = cuda_l2norm_diff(vi, v0, vertices);
-		if(v0 == numVertices-1){//0){ //% 1000 == 0){
-			printf("edgeLengths[%lu] v0 vi %f %lu %lu\n", av, edgeLengths[av], v0, vi);
-		}
+		//if(v0 == numVertices-1){//0){ //% 1000 == 0){
+		//	printf("edgeLengths[%lu] v0 vi %f %lu %lu\n", av, edgeLengths[av], v0, vi);
+		//}
 		//printf("edgeLength[%d]\t(v0 %d, vi %d)\t%g\n", av, v0, vi, edgeLengths[av]);
 	}
 }
@@ -471,11 +471,9 @@ unsigned long getV0FromRunLength(unsigned long numVertices, unsigned long av, un
 __device__
 double cuda_l2norm_diff(unsigned long vi, unsigned long v0, double* vertices){
 	// Too slow
-	if(v0 == 0){ //% 1000 == 0){
+	//if(v0 == 0){ //% 1000 == 0){
 	//	printf("vertices[(vi*3)+0], vertices[(v0*3)+0], v0, vi %f %f %lu %lu\n", vertices[(vi*3)+0], vertices[(v0*3)+0], vi, v0);
-	}
-
-	
+	//}
 	return sqrt((double) (vertices[(vi*3)+0] - vertices[(v0*3)+0])*(vertices[(vi*3)+0] - vertices[(v0*3)+0])
 					   + (vertices[(vi*3)+1] - vertices[(v0*3)+1])*(vertices[(vi*3)+1] - vertices[(v0*3)+1])
 					   + (vertices[(vi*3)+2] - vertices[(v0*3)+2])*(vertices[(vi*3)+2] - vertices[(v0*3)+2]));
@@ -515,9 +513,9 @@ void kernel_getMinEdgeLength(unsigned long numAdjacentVertices, unsigned long nu
 				minEdgeLength[v0] = edgeLengths[av];
 			}
 		}
-		if(v0 == numVertices-1){//0){//global_threadIndex < 1){ //% 1000 == 0){
-			printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
-		}
+		//if(v0 == numVertices-1){//0){//global_threadIndex < 1){ //% 1000 == 0){
+		//	printf("minEdgeLength[%d] %f\n", v0, minEdgeLength[v0]);
+		//}
 	}
 }
 
@@ -526,9 +524,9 @@ void CudaMesh::preCalculateGlobalMinEdgeLength(){
 	for(unsigned long vi = 0; vi < numVertices; vi++){
 		if(globalMinEdgeLength <= 0 || (minEdgeLength[vi] > 0 && minEdgeLength[vi] < globalMinEdgeLength)){
 			globalMinEdgeLength = minEdgeLength[vi];
-			std::cerr << "New globalMinEdgeLength: " << globalMinEdgeLength << " from vertex " << vi << std::endl;
 		}
 	}
+	printf("globalMinEdgeLength found to be %f\n", globalMinEdgeLength);
 }
 
 void CudaMesh::calculateOneRingMeanFunctionValues(){
