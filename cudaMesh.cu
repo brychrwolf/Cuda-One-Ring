@@ -567,11 +567,11 @@ void kernel_getOneRingMeanFunctionValues(
 	unsigned long global_threadIndex = blockIdx.x * blockDim.x + threadIdx.x; //0-95
 	unsigned long stride = blockDim.x * gridDim.x; //32*3 = 96
 
-	double accuFuncVals = 0.0;
-	double accuArea = 0.0;
-
 	// Use all availble threads to do all numVertices as v0
 	for(unsigned long v0 = global_threadIndex; v0 < numVertices; v0 += stride){
+		double accuFuncVals = 0.0;
+		double accuArea = 0.0;
+
 		unsigned long fi_begin = (v0 == 0 ? 0 : facesOfVertices_runLength[v0-1]);
 		for(unsigned long fi = fi_begin; fi < facesOfVertices_runLength[v0]; fi++){
 			//currFace->getFuncVal1RingSector( this, rMinDist, currArea, currFuncVal ); //ORS.307
@@ -627,16 +627,16 @@ void kernel_getOneRingMeanFunctionValues(
 			accuFuncVals += currFuncVal * currArea;
 			accuArea += currArea;
 
-			if(v0 == numVertices-1){//0){//global_threadIndex < 1){ //% 1000 == 0){
-				printf("v0, rNormDist, currFuncVal, currArea %d %f %f %f\n", v0, rNormDist, currFuncVal, currArea);
-			}
+			//if(v0 == numVertices-1){//0){//global_threadIndex < 1){ //% 1000 == 0){
+			//	printf("v0, rNormDist, currFuncVal, currArea %d %f %.16g %.16g\n", v0, rNormDist, currFuncVal, currArea);
+			//}
 		}
 
 		oneRingMeanFunctionValues[v0] = accuFuncVals / accuArea;
-		if(v0 == numVertices-1){//){//global_threadIndex < 1){ //% 1000 == 0){
-			printf("v0, accuFuncVals, accuArea %d %f %f\n", v0, accuFuncVals, accuArea);
-			printf("oneRingMeanFunctionValues[%d] %f\n", v0, oneRingMeanFunctionValues[v0]);
-		}
+		//if(v0 == numVertices-1){//){//global_threadIndex < 1){ //% 1000 == 0){
+		//	printf("v0, accuFuncVals, accuArea %d %.16g %.16g\n", v0, accuFuncVals, accuArea);
+		//	printf("oneRingMeanFunctionValues[%d] %.16g == accuFuncVals / accuArea %.16g\n", v0, oneRingMeanFunctionValues[v0], accuFuncVals / accuArea);
+		//}
 	}
 }
 
