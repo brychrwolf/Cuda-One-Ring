@@ -1,11 +1,5 @@
-thesis.log
-thesis.dvi
-thesis.pdf
-
-code/main
-code/main.exe
-code/obj
-code/lib
-code/libcudamesh.a
 *.o
 *.a
+obj
+lib
+libcudamesh.a
