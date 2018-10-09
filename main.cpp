@@ -52,16 +52,19 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	CudaMesh cm(&ca);
 
-	//TODO: guess funcValsFileName from plyFileName
-	std::string plyFileName = "example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
-	std::string funcValsFileName = "experiments/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals";
-	//std::string plyFileName = "example_meshes/h.ply";
-	if(ac > 1) plyFileName = av[1];
+	std::string plyFileName;
+	if(ac > 1)
+		plyFileName = av[1];
+	else
+		plyFileName = "example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
+		//plyFileName = "example_meshes/h.ply";
+	std::string fileNameBase = plyFileName.substr(0, plyFileName.length()-4);
+	std::string funcValsFileName = fileNameBase+"_funcvals.txt";
 
 	timer_LoadingMesh.start();
 	//TODO: fail on no load
 	cm.loadPLY(plyFileName);
-	cm.loadFunctionValues(funcValsFileName+".txt");
+	cm.loadFunctionValues(funcValsFileName);
 	timer_LoadingMesh.stop();
 
 	//cm.printMesh();
@@ -149,7 +152,7 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
-	cm.writeFunctionValues(funcValsFileName+"_1iter_libcudamesh.txt");
+	cm.writeFunctionValues(fileNameBase+"_funcvals_1iter_libcudamesh.txt");
 
 	std::cout << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;

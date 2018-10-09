@@ -5,4 +5,4 @@
 set title "Simple Plots" 
 set title  font ",20" norotate
 
-plot '< paste Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_trimmed.txt Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_libcudamesh.txt' u ($2-$4)
+plot '< paste Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_trimmed.txt Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_libcudaonering.txt' u ($2-$4)
