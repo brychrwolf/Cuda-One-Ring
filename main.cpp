@@ -13,7 +13,7 @@
 #include "cudaMesh.cuh"
 #include "cudaTimer.cuh"
 
-// to engage GPUs when installed in hybrid system, run as 
+// to engage GPUs when installed in hybrid system, run as
 // optirun ./main
 
 int main(int ac, char** av){
@@ -30,7 +30,7 @@ int main(int ac, char** av){
 	}else{
 		ca.printCUDAProps();
 	}
-	
+
 	CudaTimer timer_LoadingMesh;
 	CudaTimer timer_BuildingTables;
 		CudaTimer timer_BuildingSets;
@@ -51,7 +51,7 @@ int main(int ac, char** av){
 	std::cout << std::endl << "****** Loading Mesh..." << std::endl;
 	/*************************************************************************/
 	CudaMesh cm(&ca);
-	
+
 	//TODO: guess funcValsFileName from plyFileName
 	std::string plyFileName = "example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
 	std::string funcValsFileName = "experiments/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals";
@@ -59,18 +59,19 @@ int main(int ac, char** av){
 	if(ac > 1) plyFileName = av[1];
 
 	timer_LoadingMesh.start();
+	//TODO: fail on no load
 	cm.loadPLY(plyFileName);
 	cm.loadFunctionValues(funcValsFileName+".txt");
 	timer_LoadingMesh.stop();
-	
-	//cm.printMesh();	
+
+	//cm.printMesh();
 	std::cout << "numVertices " << cm.getNumVertices() << " numFaces " << cm.getNumFaces() << std::endl;
 	/*************************************************************************/
 	std::cout << "****** Finished Loading." << std::endl;
 	/*************************************************************************/
 
 
-	
+
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Building Tables..." << std::endl;
 	/*************************************************************************/
@@ -82,24 +83,24 @@ int main(int ac, char** av){
 	timer_BuildingSets.stop();
 	//cm.printAdjacentVertices();
 	//cm.printFacesOfVertices();
-	
+
 	std::cout << "Determine runlengths of adjacentVertices and facesofVertices" << std::endl;
 	timer_DetermineRunLengths.start();
 	cm.determineRunLengths();
 	timer_DetermineRunLengths.stop();
 	//cm.printAdjacentVertices_RunLength();
 	//cm.printFacesOfVertices_RunLength();
-	
+
 	std::cout << "Flatten adjacentVerticies and facesOfVertices" << std::endl;
 	timer_FlattenSets.start();
 	cm.flattenSets();
 	timer_FlattenSets.stop();
 	//cm.printFlat_AdjacentVertices();
 	//cm.printFlat_FacesOfVertices();
-	
+
 	std::cout << "Free non-flat sets" << std::endl;
 	cm.freeSets();
-	
+
 	timer_BuildingTables.stop();
 	/*************************************************************************/
 	std::cout << "****** Finished Building Tables." << std::endl;
@@ -116,7 +117,7 @@ int main(int ac, char** av){
 	cm.preCalculateEdgeLengths();
 	timer_PreCalEdgeLengths.stop();
 	//cm.printEdgeLengths();
-	
+
 	std::cout << "Precalculate minimum edge length among adjacent vertices..." << std::endl;
 	timer_preCalMinEdgeLength.start();
 	cm.preCalculateMinEdgeLength();
