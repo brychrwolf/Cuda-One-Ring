@@ -250,7 +250,7 @@ void CudaMesh::loadFunctionValues(std::string fileName){
 		if(line.substr(0, 1) == "#") continue;
 		std::vector<double> idsAndValues = split<double>(line);
 		functionValues[vi] = idsAndValues[1];
-		//if(vi % 1000 == 0) std::cerr << "functionValues[" << vi << "] " << functionValues[vi] << std::endl;
+		//if(vi < 10) std::cerr << "functionValues[" << vi << "] " << functionValues[vi] << std::endl;
 		vi++;
 	}
 }
@@ -531,7 +531,11 @@ void CudaMesh::preCalculateGlobalMinEdgeLength(){
 
 void CudaMesh::calculateOneRingMeanFunctionValues(){
 	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
-	int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numVertices);
+	int minGridSize, blockSize;
+	//int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numVertices) / 2;
+	//(*ca).getOptimalBlockSize(&minGridSize, &blockSize, kernel_getOneRingMeanFunctionValues, numVertices);
+	//TODO: Use CudaAccess version once passing function as a variable is figured out
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, kernel_getOneRingMeanFunctionValues, 0, numVertices);
 	unsigned long numBlocks = std::max<unsigned long>(1, numVertices / blockSize);
 	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
 	kernel_getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
@@ -590,7 +594,7 @@ void kernel_getOneRingMeanFunctionValues(
 				double rNormDist = globalMinEdgeLength; //minEdgeLength[v0];
 				double lenCenterToA = lengthEdgeC;
 				double lenCenterToB = lengthEdgeB;
-			
+
 				//ORS.403 Area - https://en.wikipedia.org/wiki/Circular_sector#Area
 				//*changed from m to r to skip "passthrough" see ORS.372
 				double rSectorArea = rNormDist * rNormDist * alpha / 2.0; // As alpha is already in radiant.
@@ -622,20 +626,21 @@ void kernel_getOneRingMeanFunctionValues(
 
 			double currFuncVal = rSectorFuncVal;
 			double currArea = rSectorArea;
-			
+
 			//ORS.309
 			accuFuncVals += currFuncVal * currArea;
 			accuArea += currArea;
 
-			//if(v0 == numVertices-1){//0){//global_threadIndex < 1){ //% 1000 == 0){
-			//	printf("v0, rNormDist, currFuncVal, currArea %d %f %.16g %.16g\n", v0, rNormDist, currFuncVal, currArea);
+			//if(v0 < 1){ //% 1000 == 0){
+				// TODO: Commenting out this line causes functions values to return as all zeroes... WHY?!
+				//printf("v0, rNormDist, currFuncVal, currArea %d %f %.8g %.8g\n", v0, rNormDist, currFuncVal, currArea);
 			//}
 		}
 
 		oneRingMeanFunctionValues[v0] = accuFuncVals / accuArea;
-		//if(v0 == numVertices-1){//){//global_threadIndex < 1){ //% 1000 == 0){
-		//	printf("v0, accuFuncVals, accuArea %d %.16g %.16g\n", v0, accuFuncVals, accuArea);
-		//	printf("oneRingMeanFunctionValues[%d] %.16g == accuFuncVals / accuArea %.16g\n", v0, oneRingMeanFunctionValues[v0], accuFuncVals / accuArea);
+		//if(v0 < 10){// == numVertices-1){//){//global_threadIndex < 1){ //% 1000 == 0){
+		//	printf("v0, accuFuncVals, accuArea %d %.8g %.8g\n", v0, accuFuncVals, accuArea);
+		//	printf("oneRingMeanFunctionValues[%d] %.8g == accuFuncVals / accuArea %.16g\n", v0, oneRingMeanFunctionValues[v0], accuFuncVals / accuArea);
 		//}
 	}
 }
