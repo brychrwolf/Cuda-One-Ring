@@ -53,18 +53,23 @@ int main(int ac, char** av){
 	CudaMesh cm(&ca);
 
 	std::string plyFileName;
+	std::string plyDirectory = "";
 	if(ac > 1)
 		plyFileName = av[1];
-	else
-		plyFileName = "example_meshes/Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
-		//plyFileName = "example_meshes/h.ply";
+	else if(ac > 2)
+		plyDirectory = av[2];
+	else{
+		plyFileName = "Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
+		//plyFileName = "h.ply";
+		plyDirectory = "example_meshes";
+	}
 	std::string fileNameBase = plyFileName.substr(0, plyFileName.length()-4);
 	std::string funcValsFileName = fileNameBase+"_funcvals.txt";
 
 	timer_LoadingMesh.start();
 	//TODO: fail on no load
-	cm.loadPLY(plyFileName);
-	cm.loadFunctionValues(funcValsFileName);
+	cm.loadPLY(plyDirectory+"/"+plyFileName);
+	cm.loadFunctionValues(plyDirectory+"/"+funcValsFileName);
 	timer_LoadingMesh.stop();
 
 	//cm.printMesh();
@@ -119,6 +124,8 @@ int main(int ac, char** av){
 	timer_PreCalEdgeLengths.start();
 	cm.preCalculateEdgeLengths();
 	timer_PreCalEdgeLengths.stop();
+	//ca.printMemInfo();
+	//ca.printLastCUDAError();
 	//cm.printEdgeLengths();
 
 	std::cout << "Precalculate minimum edge length among adjacent vertices..." << std::endl;
@@ -126,6 +133,8 @@ int main(int ac, char** av){
 	cm.preCalculateMinEdgeLength();
 	cm.preCalculateGlobalMinEdgeLength(); //TODO: Add own timer
 	timer_preCalMinEdgeLength.stop();
+	//ca.printMemInfo();
+	//ca.printLastCUDAError();
 	//cm.printMinEdgeLength();
 
 	timer_PreCalculations.stop();
@@ -138,11 +147,14 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Calculating..." << std::endl;
 	/*************************************************************************/
-	timer_Calculating.start();
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
+	//ca.printMemInfo();
+	timer_Calculating.start();
 	cm.calculateOneRingMeanFunctionValues();
-	//cm.printOneRingMeanFunctionValues();
 	timer_Calculating.stop();
+	//cm.printOneRingMeanFunctionValues();
+	//ca.printMemInfo();
+	ca.printLastCUDAError();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/*************************************************************************/
@@ -152,7 +164,7 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
-	cm.writeFunctionValues(fileNameBase+"_funcvals_1iter_libcudamesh.txt");
+	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_libcudaonering.txt");
 
 	std::cout << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;
