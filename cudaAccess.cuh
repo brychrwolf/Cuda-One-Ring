@@ -38,8 +38,11 @@ class CudaAccess{
 		int getMinWarpSize();
 		int getMinMaxBlockSize();
 		int getIdealBlockSizeForProblemOfSize(int n);
+		//template <class T> void getOptimalBlockSize(int* minGridSize, int* blockSize, T kernel, unsigned long n);
 
 		void printCUDAProps();
+		void printLastCUDAError();
+		void printMemInfo();
 };
 
 #endif // CUDAACCESS_H

@@ -128,6 +128,12 @@ int CudaAccess::getIdealBlockSizeForProblemOfSize(int n){
 		return minWarpSize;								// very likely 32
 }
 
+//TODO: Figure otu passing function as a variable
+//template <class T>
+//void CudaAccess::getOptimalBlockSize<void>(int* minGridSize, int* blockSize, T kernel, unsigned long n){
+//	cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize, kernel, 0, n);
+//}
+
 
 
 void CudaAccess::printCUDAProps(){
@@ -152,5 +158,19 @@ void CudaAccess::printCUDAProps(){
 	}
 	printf("\nMinimum Warp Size in system:        %d\n",  minWarpSize);
 	printf("Minimum Max Block Size in system:   %d\n",  minMaxBlockSize);
+}
+
+void CudaAccess::printLastCUDAError(){
+	cudaError err = cudaGetLastError();
+	if (err == cudaSuccess)
+		printf( "CUDA ERROR: none\n");
+	else
+		fprintf(stderr, "CUDA ERROR: %s\n", cudaGetErrorString(err));
+}
+
+void CudaAccess::printMemInfo(){
+	size_t free, total;
+	cudaMemGetInfo(&free, &total);
+	printf("CUDA MEM INFO: %8zu free from %8zu total.\n", free, total);
 }
 
