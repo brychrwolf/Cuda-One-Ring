@@ -177,6 +177,7 @@ void CudaMesh::loadPLY(std::string fileName){
 	unsigned long x_idx;
 	unsigned long y_idx;
 	unsigned long z_idx;
+	unsigned long q_idx;
 
 	std::ifstream infile(fileName);
 	
@@ -206,6 +207,8 @@ void CudaMesh::loadPLY(std::string fileName){
 					y_idx = v_idx;
 				else if(words[2] == "z")
 					z_idx = v_idx;
+				else if(words[2] == "quality")
+					q_idx = v_idx;
 				v_idx++;
 			}else if(line.substr(0, 10) == "end_header"){
 				inHeaderSection = false;
@@ -219,6 +222,8 @@ void CudaMesh::loadPLY(std::string fileName){
 			vertices[vi*3 + 0] = coords[x_idx];
 			vertices[vi*3 + 1] = coords[y_idx];
 			vertices[vi*3 + 2] = coords[z_idx];
+			functionValues[vi] = coords[q_idx];
+			std::cerr << "functionValues[" << vi << "] = " << coords[q_idx] << std::endl;
 			vi++;
 		}else{
 			std::vector<unsigned long> coords = split<unsigned long>(line);

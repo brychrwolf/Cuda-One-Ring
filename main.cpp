@@ -54,11 +54,11 @@ int main(int ac, char** av){
 
 	std::string plyFileName;
 	std::string plyDirectory = "";
-	if(ac > 1)
+	if(ac > 1){
 		plyFileName = av[1];
-	else if(ac > 2)
-		plyDirectory = av[2];
-	else{
+		if(ac > 2)
+			plyDirectory = av[2];
+	}else{
 		plyFileName = "Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
 		//plyFileName = "h.ply";
 		plyDirectory = "example_meshes";
@@ -69,7 +69,7 @@ int main(int ac, char** av){
 	timer_LoadingMesh.start();
 	//TODO: fail on no load
 	cm.loadPLY(plyDirectory+"/"+plyFileName);
-	cm.loadFunctionValues(plyDirectory+"/"+funcValsFileName);
+	//cm.loadFunctionValues(plyDirectory+"/"+funcValsFileName);
 	timer_LoadingMesh.stop();
 
 	//cm.printMesh();
@@ -150,11 +150,10 @@ int main(int ac, char** av){
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	//ca.printMemInfo();
 	timer_Calculating.start();
+	//TODO:enable variable iterations of calculation
 	cm.calculateOneRingMeanFunctionValues();
 	timer_Calculating.stop();
 	//cm.printOneRingMeanFunctionValues();
-	//ca.printMemInfo();
-	ca.printLastCUDAError();
 	/*************************************************************************/
 	std::cout << "****** Finished Calculating." << std::endl;
 	/*************************************************************************/
@@ -164,6 +163,8 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
+	//ca.printMemInfo();
+	ca.printLastCUDAError();
 	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_libcudaonering.txt");
 	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_trimmed.txt", 1e-5);
 
