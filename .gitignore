@@ -3,3 +3,4 @@
 obj
 lib
 libcudamesh.a
+synthetic_square_Dirac_delta_function
