@@ -4,6 +4,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "cudaMesh.cuh"
 #include "cudaAccess.cuh"
@@ -529,6 +530,9 @@ void CudaMesh::preCalculateGlobalMinEdgeLength(){
 	printf("globalMinEdgeLength found to be %f\n", globalMinEdgeLength);
 }
 
+
+/* Calculate */
+
 void CudaMesh::calculateOneRingMeanFunctionValues(){
 	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
 	int minGridSize, blockSize;
@@ -676,3 +680,38 @@ double getEdgeLengthOfV0AndVi(unsigned long v0, unsigned long vi, unsigned long*
 	return edgeLength;
 }
 
+
+
+/* Analyze */
+void CudaMesh::analyzeFunctionValues(std::string truthFileName, double tolerence){
+	//TODO: use CUDA to speed up
+	//TODO: Complain if file doesn't exists
+	std::ifstream infile(truthFileName);
+	std::string line;
+	unsigned long vi = 0;
+	std::map<unsigned long, double> diff;
+	while(std::getline(infile, line)){
+		if(line.substr(0, 1) == "#") continue;
+		std::vector<double> idsAndValues = split<double>(line);
+		double truthValue = idsAndValues[1];
+		if(abs(oneRingMeanFunctionValues[vi] - truthValue) > tolerence){
+			diff[vi] = truthValue;
+		}
+		vi++;
+	}
+	std::cout << vi << " function values compared." << std::endl;
+	std::cout << diff.size() << " differences between calculated and truth values found." << std::endl;
+	if(diff.size() > 0){
+		std::cout << "   vertex: calculated - truth = difference" << std::endl;
+		std::map<unsigned long, double>::iterator it;
+		for(it = diff.begin(); it != diff.end(); it++){
+			unsigned long index = it->first;
+			double truthVal = it->second;
+			std::cout << "   " << index << ": "
+							 << oneRingMeanFunctionValues[index] << " - "
+							 << truthVal << " = "
+							 << oneRingMeanFunctionValues[index] - truthVal
+							 << std::endl;
+		}
+	}
+}

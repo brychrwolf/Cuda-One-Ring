@@ -133,6 +133,9 @@ class CudaMesh{
 		
 		/* Calculate */
 		void calculateOneRingMeanFunctionValues();
+
+		/* Analyze */
+		void analyzeFunctionValues(std::string truthFileName, double tolerence);
 };
 
 #endif // CUDAMESH_CUH

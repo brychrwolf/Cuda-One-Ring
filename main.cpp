@@ -165,16 +165,17 @@ int main(int ac, char** av){
 	std::cout << std::endl << "****** Begin Analyzing..." << std::endl;
 	/*************************************************************************/
 	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_libcudaonering.txt");
+	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_trimmed.txt", 1e-5);
 
-	std::cout << "Elapsed times:" << std::endl;
+	std::cout << std::endl << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;
 	std::cout << "BuildingTables\t" << std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingTables.getElapsedTime() << std::endl;
-	std::cout << "\tBuildingSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingSets.getElapsedTime() << std::endl;
-	std::cout << "\tDetermineRunLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_DetermineRunLengths.getElapsedTime() << std::endl;
-	std::cout << "\tFlattenSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_FlattenSets.getElapsedTime() << std::endl;
+	std::cout << "   BuildingSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_BuildingSets.getElapsedTime() << std::endl;
+	std::cout << "   DetermineRunLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_DetermineRunLengths.getElapsedTime() << std::endl;
+	std::cout << "   FlattenSets\t\t" 		<< std::fixed << std::setw(10) << std::setprecision(3) << timer_FlattenSets.getElapsedTime() << std::endl;
 	std::cout << "PreCalculations\t" << std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalculations.getElapsedTime() << std::endl;
-	std::cout << "\tPreCalEdgeLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalEdgeLengths.getElapsedTime() << std::endl;
-	std::cout << "\tPreCalMinEdgeLength\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_preCalMinEdgeLength.getElapsedTime() << std::endl;
+	std::cout << "   PreCalEdgeLengths\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_PreCalEdgeLengths.getElapsedTime() << std::endl;
+	std::cout << "   PreCalMinEdgeLength\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_preCalMinEdgeLength.getElapsedTime() << std::endl;
 	std::cout << "Calculating\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_Calculating.getElapsedTime() << std::endl;
 	/*************************************************************************/
 	std::cout << "****** Finished Analyzing..." << std::endl;
