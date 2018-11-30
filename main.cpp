@@ -52,13 +52,19 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	CudaMesh cm(&ca);
 
+	int numIters;
 	std::string plyFileName;
-	std::string plyDirectory = "";
+	std::string plyDirectory;
 	if(ac > 1){
-		plyFileName = av[1];
-		if(ac > 2)
-			plyDirectory = av[2];
+		numIters = std::stoi(av[1]);
+		if(ac > 2){
+			plyFileName = av[2];
+			if(ac > 3){
+				plyDirectory = av[3];
+			}
+		}
 	}else{
+		numIters = 1;
 		plyFileName = "Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII.ply";
 		//plyFileName = "h.ply";
 		plyDirectory = "example_meshes";
@@ -68,6 +74,7 @@ int main(int ac, char** av){
 
 	timer_LoadingMesh.start();
 	//TODO: fail on no load
+	std::cerr << "filename " << plyDirectory+"/"+plyFileName << std::endl;
 	cm.loadPLY(plyDirectory+"/"+plyFileName);
 	//cm.loadFunctionValues(plyDirectory+"/"+funcValsFileName);
 	timer_LoadingMesh.stop();
@@ -150,8 +157,7 @@ int main(int ac, char** av){
 	std::cout << "Calculating oneRingMeanFunctionValues (circle sectors)..." << std::endl;
 	//ca.printMemInfo();
 	timer_Calculating.start();
-	//TODO:enable variable iterations of calculation
-	cm.calculateOneRingMeanFunctionValues();
+	cm.calculateOneRingMeanFunctionValues(numIters);
 	timer_Calculating.stop();
 	//cm.printOneRingMeanFunctionValues();
 	/*************************************************************************/
@@ -165,8 +171,8 @@ int main(int ac, char** av){
 	/*************************************************************************/
 	//ca.printMemInfo();
 	ca.printLastCUDAError();
-	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_libcudaonering.txt");
-	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_1iter_trimmed.txt", 1e-5);
+	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_libcudaonering.txt");
+	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_truth.txt", 1e-5);
 
 	std::cout << std::endl << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;

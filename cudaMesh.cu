@@ -10,6 +10,12 @@
 #include "cudaAccess.cuh"
 
 //TODO: Only loads PLY files, should support other file types!
+void swap(double* &a, double* &b){
+	double* temp = a;
+	a = b;
+	b = temp;
+}
+
 
 CudaMesh::CudaMesh(){
 	//TODO: implement
@@ -223,7 +229,6 @@ void CudaMesh::loadPLY(std::string fileName){
 			vertices[vi*3 + 1] = coords[y_idx];
 			vertices[vi*3 + 2] = coords[z_idx];
 			functionValues[vi] = coords[q_idx];
-			std::cerr << "functionValues[" << vi << "] = " << coords[q_idx] << std::endl;
 			vi++;
 		}else{
 			std::vector<unsigned long> coords = split<unsigned long>(line);
@@ -256,7 +261,6 @@ void CudaMesh::loadFunctionValues(std::string fileName){
 		if(line.substr(0, 1) == "#") continue;
 		std::vector<double> idsAndValues = split<double>(line);
 		functionValues[vi] = idsAndValues[1];
-		//if(vi < 10) std::cerr << "functionValues[" << vi << "] " << functionValues[vi] << std::endl;
 		vi++;
 	}
 }
@@ -538,7 +542,7 @@ void CudaMesh::preCalculateGlobalMinEdgeLength(){
 
 /* Calculate */
 
-void CudaMesh::calculateOneRingMeanFunctionValues(){
+void CudaMesh::calculateOneRingMeanFunctionValues(int numIters){
 	cudaMallocManaged(&oneRingMeanFunctionValues, numVertices*sizeof(double));
 	int minGridSize, blockSize;
 	//int blockSize = (*ca).getIdealBlockSizeForProblemOfSize(numVertices) / 2;
@@ -546,33 +550,39 @@ void CudaMesh::calculateOneRingMeanFunctionValues(){
 	//TODO: Use CudaAccess version once passing function as a variable is figured out
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, kernel_getOneRingMeanFunctionValues, 0, numVertices);
 	unsigned long numBlocks = std::max<unsigned long>(1, numVertices / blockSize);
-	std::cout << "getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
-	kernel_getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
-		numVertices, 
-		adjacentVertices_runLength, 
-		facesOfVertices_runLength, 
-		flat_facesOfVertices, 
-		flat_adjacentVertices, 
-		faces,
-		minEdgeLength,
-		globalMinEdgeLength,
-		functionValues,
-		edgeLengths,
-		oneRingMeanFunctionValues
-	);
-	cudaDeviceSynchronize();
+	std::cout << numIters << " x getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
+	for(int i = 0; i < numIters; i++){
+		if(i+1%2 == 0) swap(functionValues, oneRingMeanFunctionValues);
+		std::cerr << "&functionValues = " << &functionValues << std::endl;
+		kernel_getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
+			numVertices, 
+			adjacentVertices_runLength, 
+			facesOfVertices_runLength, 
+			flat_facesOfVertices, 
+			flat_adjacentVertices, 
+			faces,
+			minEdgeLength,
+			globalMinEdgeLength,
+			functionValues,
+			edgeLengths,
+			oneRingMeanFunctionValues
+		);
+		//TODO: major improvement if can avoid this deviceSync
+		cudaDeviceSynchronize();
+	}
+	if(numIters%2 == 0) swap(functionValues, oneRingMeanFunctionValues);
 }
 
 __global__
 void kernel_getOneRingMeanFunctionValues(
-	unsigned long numVertices, 
+	unsigned long numVertices,
 	unsigned long* adjacentVertices_runLength,
-	unsigned long* facesOfVertices_runLength, 
-	unsigned long* flat_facesOfVertices, 
+	unsigned long* facesOfVertices_runLength,
+	unsigned long* flat_facesOfVertices,
 	unsigned long* flat_adjacentVertices,
-	unsigned long* faces, 
-	double* minEdgeLength, 
-	double globalMinEdgeLength, 
+	unsigned long* faces,
+	double* minEdgeLength,
+	double globalMinEdgeLength,
 	double* functionValues,
 	double* edgeLengths,
 	double* oneRingMeanFunctionValues
