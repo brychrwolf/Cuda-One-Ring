@@ -5,17 +5,10 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <utility>
 
 #include "cudaMesh.cuh"
 #include "cudaAccess.cuh"
-
-//TODO: Only loads PLY files, should support other file types!
-void swap(double* &a, double* &b){
-	double* temp = a;
-	a = b;
-	b = temp;
-}
-
 
 CudaMesh::CudaMesh(){
 	//TODO: implement
@@ -552,8 +545,7 @@ void CudaMesh::calculateOneRingMeanFunctionValues(int numIters){
 	unsigned long numBlocks = std::max<unsigned long>(1, numVertices / blockSize);
 	std::cout << numIters << " x getOneRingMeanFunctionValues<<<" << numBlocks << ", " << blockSize << ">>(" << numVertices << ")" << std::endl;
 	for(int i = 0; i < numIters; i++){
-		if(i+1%2 == 0) swap(functionValues, oneRingMeanFunctionValues);
-		std::cerr << "&functionValues = " << &functionValues << std::endl;
+		if(i>0) std::swap(functionValues, oneRingMeanFunctionValues);
 		kernel_getOneRingMeanFunctionValues<<<numBlocks, blockSize>>>(
 			numVertices, 
 			adjacentVertices_runLength, 
@@ -570,7 +562,6 @@ void CudaMesh::calculateOneRingMeanFunctionValues(int numIters){
 		//TODO: major improvement if can avoid this deviceSync
 		cudaDeviceSynchronize();
 	}
-	if(numIters%2 == 0) swap(functionValues, oneRingMeanFunctionValues);
 }
 
 __global__

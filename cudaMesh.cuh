@@ -22,8 +22,6 @@ template std::vector<float> split<float>(std::string);
 template std::vector<double> split<double>(std::string);
 template std::vector<unsigned long> split<unsigned long>(std::string);
 
-void swap(double* &a, double* &b);
-
 // Kernels must be defined outside of the class
 __global__ void kernel_getEdgeLengths(unsigned long numAdjacentVertices, unsigned long numVertices, unsigned long* flat_adjacentVertices, unsigned long* adjacentVertices_runLength, double* vertices, double* edgeLengths);
 __device__ unsigned long getV0FromRunLength(unsigned long numVertices, unsigned long av, unsigned long* adjacentVertices_runLength);
