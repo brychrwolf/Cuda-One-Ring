@@ -172,7 +172,7 @@ int main(int ac, char** av){
 	//ca.printMemInfo();
 	ca.printLastCUDAError();
 	cm.writeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_libcudaonering.txt");
-	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_gigamesh.txt", 1e-5);
+	cm.analyzeFunctionValues(plyDirectory+"/experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_gigamesh.txt", 1e-6);
 
 	std::cout << std::endl << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;
