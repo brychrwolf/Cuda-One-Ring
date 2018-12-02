@@ -1,0 +1,25 @@
+ply
+format ascii 1.0
+comment A synthetic hexagon, subdivided by triangles, with a Dirac delta function applied.
+comment made by Bryan Wolfford
+element vertex 7
+property int x
+property int y
+property int z
+property float quality
+element face 6
+property list uchar int32 vertex_indices
+end_header
+0 0 0 1
+0.866025 0.5 0 0
+0 1 0 0
+-0.866025 0.5 0 0
+-0.866025 -0.5 0 0
+0 -1 0 0
+0.866025 -0.5 0 0
+3 0 1 2
+3 0 2 3
+3 0 3 4
+3 0 4 5
+3 0 5 6
+3 0 6 1
