@@ -3,17 +3,19 @@
 #include <cstring>
 #include <cmath>
 #include <iostream>
+#include <array>
+#include <vector>
 
 const double PI = 4*std::atan(1);
 int globalVertex = 1;
 
-void getNumVerticesAndFaces(int numRings, int& numVertices, int& numFaces){
+void getNumVerticesAndFaces(int numRings, int& numHexes, int& numVertices, int& numFaces){
 	int nthTriNum = numRings*(numRings+1)/2; //1 3 6 10 15; the nth Triangular Number
-	int numHexes = 1 + 6*nthTriNum;
-	numFaces = 6*numHexes;
+	numHexes = 1 + 6*nthTriNum;
 	numVertices = numHexes;
 	for(int sideLength = 0; sideLength <= numRings; sideLength++)
 		numVertices += 6*(2*sideLength+1);
+	numFaces = 6*numHexes;
 }
 
 void getPoint(int angle, double center[], double length, double point[]){
@@ -40,10 +42,10 @@ int main(int ac, char** av){
 	int cornerDist = 1;
 	double centerDist = std::sqrt(3) * cornerDist;
 
+	int numHexes;
 	int numVertices;
 	int numFaces;
-	getNumVerticesAndFaces(numRings, numVertices, numFaces);
-	
+	getNumVerticesAndFaces(numRings, numHexes, numVertices, numFaces);
 
 	int ringAngles[6] = {120, 180, 240, 300, 0, 60};
 	int cornerAngles[8] = {30, 90, 150, 210, 270, 330, 30, 90}; //covers wrap around for sides 5,6 
@@ -51,6 +53,9 @@ int main(int ac, char** av){
 	double cursor[2];
 	double center[2];
 	double corner[2];
+	int cnrIdx = 0;
+	std::array<int, 6> corners;
+	std::vector<std::array<int, 6>> hexCorners;
 
 	std::string ply_fileName = "synthetic_hexagon_Dirac_delta_function_"+std::to_string(numRings)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
@@ -69,14 +74,19 @@ int main(int ac, char** av){
 			<< "end_header" << std::endl;
 
 	//Write middle
+	cnrIdx++; //Hex centers are not corners
 	ply_outfile << "0 0 0 1" << std::endl;
 	center[0] = 0; center[1] = 0;
 	//Write corners of middle hexagon
 	for(int i = 0; i < 6; i++){
 		getPoint(cornerAngles[i], center, cornerDist, corner);
+		corners[i] = cnrIdx++;
 		writePoint(ply_outfile, corner);
 	}
+	hexCorners.push_back(corners);
+	//for(int i = 0; i < 6; i++) std::cerr << "hexCorners[0][" << i << "] = " << hexCorners[0][i] << std::endl;
 	
+	//Write each ring
 	for(int ring = 1; ring <= numRings; ring++){
 		//Start on right of center
 		cursor[0] = ring*centerDist; cursor[1] = 0;
@@ -99,12 +109,13 @@ int main(int ac, char** av){
 	//Triangles
 	int ringMax = 0;
 	int ringNumFaces;
+	int ringNumHexes;
 	int prevRingMax;
 	for(int ring = 0; ring <= numRings; ring++){
 		std::cerr << "ring " << ring << std::endl;
 		std::cerr << "numRings " << numRings << std::endl;
 		prevRingMax = ringMax;
-		getNumVerticesAndFaces(ring, ringMax, ringNumFaces);
+		getNumVerticesAndFaces(ring, ringNumHexes, ringMax, ringNumFaces); //TODO: simplify way to get ringMax
 		ringMax -= 1; //offset for 0-index vs 1-index
 		int numHexesInRing = ring>0?6*ring:1; //ensure ring 0 -> 1
 		std::cerr << "numHexesInRing " << numHexesInRing << std::endl;
