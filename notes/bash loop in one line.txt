@@ -1,0 +1,1 @@
+for i in {0,1,2,3,10,30,100}; do ./synthetic_hexagon_Dirac_delta_function $i; done
