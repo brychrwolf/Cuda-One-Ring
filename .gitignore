@@ -4,4 +4,6 @@
 obj
 lib
 libcudamesh.a
-synthetic_square_Dirac_delta_function
+hexagonal_tessellation_Dirac_delta
+square_tessellation_2tri_Dirac_delta
+square_tessellation_4tri_Dirac_delta
