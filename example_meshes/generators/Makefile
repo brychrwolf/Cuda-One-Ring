@@ -1,7 +1,7 @@
 all: hexagon \
 	 square2 \
 	 square4 \
-	 randcircle
+	 randCircle
 
 hexagon:
 	g++ hexagonal_tessellation_Dirac_delta.cpp -o hexagonal_tessellation_Dirac_delta
