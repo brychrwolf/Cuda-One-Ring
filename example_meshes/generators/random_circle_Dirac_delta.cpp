@@ -39,7 +39,7 @@ int main(int ac, char** av){
 	delaunator::Delaunator d(coords);
 	int numFaces = d.triangles.size() / 3; //TODO delaney triangulation 
 	
-	std::string ply_fileName = "../random_circle_tesselation_Dirac_delta_"+std::to_string(radius)+"_"+std::to_string(numVertices)+".ply";
+	std::string ply_fileName = "../random_circle_tesselation_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 	
 	ply_outfile << "ply" << std::endl

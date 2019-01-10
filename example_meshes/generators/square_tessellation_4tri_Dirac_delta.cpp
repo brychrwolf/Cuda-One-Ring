@@ -10,7 +10,7 @@ int main(int ac, char** av){
 	int numVertices = numVertices_frame + numVertices_centers;
 	int numFaces = 4*(diameter-1)*(diameter-1);
 
-	std::string ply_fileName = "../square_tesselation_4tri_Dirac_delta_"+std::to_string(radius)+".ply";
+	std::string ply_fileName = "../square_tesselation_4tri_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 	
 	ply_outfile << "ply" << std::endl
