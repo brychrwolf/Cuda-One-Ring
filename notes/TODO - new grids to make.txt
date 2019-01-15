@@ -1,4 +1,0 @@
-making new grids
-squares into 4 triangles
-rectangles instead of squares (2w 1l)
-random pattern (Delaunay triangulation)
