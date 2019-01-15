@@ -5,8 +5,8 @@ int main(int ac, char** av){
 	int radius = 4;//;1e2;//1e5;
 	if(ac > 1) radius = std::stoi(av[1]);
 	int diameter = 2*radius + 1;
-	int numVertices = 4*radius*radius + 4*radius + 1;
-	int numFaces = 2*(diameter-1)*(diameter-1);
+	long numVertices = 4*radius*radius + 4*radius + 1;
+	long numFaces = 2*(diameter-1)*(diameter-1);
 
 	std::string ply_fileName = "../square_tesselation_2tri_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
@@ -16,9 +16,9 @@ int main(int ac, char** av){
 			<< "comment A synthetic square, subdivided by triangles, with a Dirac delta function applied." << std::endl
 			<< "comment made by Bryan Wolfford" << std::endl
 			<< "element vertex " << numVertices << std::endl
-			<< "property int x" << std::endl
-			<< "property int y" << std::endl
-			<< "property int z" << std::endl
+			<< "property float x" << std::endl
+			<< "property float y" << std::endl
+			<< "property float z" << std::endl
 			<< "property float quality" << std::endl
 			<< "element face " << numFaces << std::endl
 			<< "property list uchar int32 vertex_indices" << std::endl
