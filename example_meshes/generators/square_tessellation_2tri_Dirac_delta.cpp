@@ -8,7 +8,7 @@ int main(int ac, char** av){
 	int numVertices = 4*radius*radius + 4*radius + 1;
 	int numFaces = 2*(diameter-1)*(diameter-1);
 
-	std::string ply_fileName = "../square_tesselation_2tri_Dirac_delta__"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
+	std::string ply_fileName = "../square_tesselation_2tri_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 	
 	ply_outfile << "ply" << std::endl
