@@ -46,7 +46,7 @@ int main(int ac, char** av){
 	long numFaces = d.triangles.size() / 3;
 	
 	//std::cerr << "initializing ply file" << std::endl;
-	std::string ply_fileName = "../random_circle_tesselation_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
+	std::string ply_fileName = "../synthetic_meshes/random_circle_tesselation_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 	
 	ply_outfile << "ply" << std::endl

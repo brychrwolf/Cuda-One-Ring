@@ -71,7 +71,7 @@ int main(int ac, char** av){
 	long vertexIdx = 0;
 	std::vector<long> centers;
 
-	std::string ply_fileName = "../example_meshes/hexagonal_tessellation_Dirac_delta_"+std::to_string(numRings)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
+	std::string ply_fileName = "../synthetic_meshes/hexagonal_tessellation_Dirac_delta_"+std::to_string(numRings)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 
 	ply_outfile << "ply" << std::endl
