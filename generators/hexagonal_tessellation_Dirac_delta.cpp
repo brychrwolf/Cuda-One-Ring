@@ -9,22 +9,21 @@
 const bool DEBUG = false;//true;
 const double ZERO_TOL = 1e-8;
 const double PI = 4*std::atan(1);
-int globalVertex = 1;
 
-int calculateNumHexes(int numRings){
-	int nthTriNum = numRings*(numRings+1)/2; //1 3 6 10 15; the nth Triangular Number
+long calculateNumHexes(long numRings){
+	long nthTriNum = numRings*(numRings+1)/2; //1 3 6 10 15; the nth Triangular Number
 	return 1 + 6*nthTriNum;
 }
 
-int calculateNumFaces(int numRings){
+long calculateNumFaces(long numRings){
 	return 6*calculateNumHexes(numRings);
 }
 
-int calculateNumVertices(int numRings){
+long calculateNumVertices(long numRings){
 	//start with a vertex as center of each hex
-	int numVertices = calculateNumHexes(numRings);
+	long numVertices = calculateNumHexes(numRings);
 	//add corners on frontier of each ring
-	for(int sideLength = 0; sideLength <= numRings; sideLength++)
+	for(long sideLength = 0; sideLength <= numRings; sideLength++)
 		numVertices += 6*(2*sideLength+1);
 	return numVertices;
 }
@@ -44,7 +43,7 @@ void writePoint(std::ofstream& ply_outfile, double* point){
 	ply_outfile << point[0] << " " << point[1] << " 0 0" << std::endl;
 }
 
-void writeTriangles(std::ofstream& ply_outfile, double center, double p1, double p2, double p3, double p4, double p5, double p6){
+void writeTriangles(std::ofstream& ply_outfile, long center, long p1, long p2, long p3, long p4, long p5, long p6){
 	ply_outfile << "3 " << center << " " << p1 << " " << p2 << std::endl;
 	ply_outfile << "3 " << center << " " << p2 << " " << p3 << std::endl;
 	ply_outfile << "3 " << center << " " << p3 << " " << p4 << std::endl;
@@ -59,8 +58,8 @@ int main(int ac, char** av){
 	int cornerDist = 1;
 	double centerDist = std::sqrt(3) * cornerDist;
 
-	int numVertices = calculateNumVertices(numRings);
-	int numFaces = calculateNumFaces(numRings);
+	long numVertices = calculateNumVertices(numRings);
+	long numFaces = calculateNumFaces(numRings);
 
 	int ringAngles[6] = {120, 180, 240, 300, 0, 60};
 	int cornerAngles[8] = {30, 90, 150, 210, 270, 330, 30, 90}; //covers wrap around for sides 5,6 
@@ -69,10 +68,10 @@ int main(int ac, char** av){
 	double center[2];
 	double corner[2];
 
-	int vertexIdx = 0;
-	std::vector<int> centers;
+	long vertexIdx = 0;
+	std::vector<long> centers;
 
-	std::string ply_fileName = "../hexagonal_tessellation_Dirac_delta_"+std::to_string(numRings)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
+	std::string ply_fileName = "../example_meshes/hexagonal_tessellation_Dirac_delta_"+std::to_string(numRings)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
 	std::ofstream ply_outfile(ply_fileName);
 
 	ply_outfile << "ply" << std::endl
@@ -80,9 +79,9 @@ int main(int ac, char** av){
 			<< "comment A synthetic hexagon, subdivided by triangles, with a Dirac delta function applied." << std::endl
 			<< "comment made by Bryan Wolfford" << std::endl
 			<< "element vertex " << numVertices << std::endl
-			<< "property int x" << std::endl
-			<< "property int y" << std::endl
-			<< "property int z" << std::endl
+			<< "property float x" << std::endl
+			<< "property float y" << std::endl
+			<< "property float z" << std::endl
 			<< "property float quality" << std::endl
 			<< "element face " << numFaces << std::endl
 			<< "property list uchar int32 vertex_indices" << std::endl
@@ -102,11 +101,11 @@ int main(int ac, char** av){
 	}
 	
 	//Write each ring
-	for(int ring = 1; ring <= numRings; ring++){		
+	for(long ring = 1; ring <= numRings; ring++){		
 		//Start just right of center
 		cursor[0] = ring*centerDist; cursor[1] = 0;
 		for(int sideOfRing = 0; sideOfRing < 6; sideOfRing++){
-			for(int hexOnSide = 0; hexOnSide < ring; hexOnSide++){
+			for(long hexOnSide = 0; hexOnSide < ring; hexOnSide++){
 				//Write the next hex in the direction of this side
 				getPoint(ringAngles[sideOfRing], cursor, centerDist, center);
 				writePoint(ply_outfile, center);
@@ -127,29 +126,24 @@ int main(int ac, char** av){
 		std::cerr << "centers[" << i << "] " << centers[i] << std::endl;
 
 	//Triangles
-	int numHexesOnRing;
-	int globalHexIndex = 0;
-	int n2Index = 0;
+	long numHexesOnRing;
+	long globalHexIndex = 0;
+	long n2Index = 0;
 	//Write triangles of middle hex
-	int prev_maxVertex = 0;
-	//int prev_maxCenter = 0;
-	//int prev_minCenter = 0;
-	int maxVertex = 6;
-	//int maxCenter = 0;
-	//int minCenter = 0;
+	long prev_maxVertex = 0;
+	long maxVertex = 6;
 
 	bool isOnCorner = false;
-	//int prev_hexCenter = 0;
-	int hexCenter = 0;
+	long hexCenter = 0;
 
-	int prev_n2 = 0;
-	int n2 = 0; //int n1 = 0, n2 = 0, n3 = 0, n4 = 0;
-	int p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6;
+	long prev_n2 = 0;
+	long n2 = 0; //long n1 = 0, n2 = 0, n3 = 0, n4 = 0;
+	long p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6;
 	writeTriangles(ply_outfile, hexCenter, p1, p2, p3, p4, p5, p6);
 	globalHexIndex++;
 
 	//Write triangles for each hex in each side of each ring
-	for(int ring = 1; ring <= numRings; ring++){
+	for(long ring = 1; ring <= numRings; ring++){
 		numHexesOnRing = 6*ring;
 		prev_maxVertex = maxVertex;
 		//prev_maxCenter = maxCenter;
@@ -161,7 +155,7 @@ int main(int ac, char** av){
 			std::cerr << "ring " << ring << " numHexesOnRing " << numHexesOnRing << " maxVertex " << maxVertex << std::endl;
 			std::cerr << "prev_maxVertex " << prev_maxVertex << std::endl << std::endl;
 		}
-		for(int hexIdx = 0; hexIdx < numHexesOnRing; hexIdx++){
+		for(long hexIdx = 0; hexIdx < numHexesOnRing; hexIdx++){
 			isOnCorner = ((ring == 1) || ((hexIdx+1) % ring) == 0);
 
 			prev_n2 = n2;
