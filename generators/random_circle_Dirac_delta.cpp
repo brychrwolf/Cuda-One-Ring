@@ -20,7 +20,7 @@ void generateVertexCoords(double rand0, double rand1, int radius, double &x, dou
 
 int main(int ac, char** av){
 	int radius = (ac > 1) ? std::stoi(av[1]) : 1e3;
-	int numVertices = (ac > 1) ? std::stoi(av[2]) : 1e3;
+	long numVertices = (ac > 1) ? std::stoi(av[2]) : 1e3;
 
 	// put first vertex in center
 	//std::cerr << "put first vertex in center" << std::endl;
@@ -32,7 +32,7 @@ int main(int ac, char** av){
 	double x, y;
 	std::minstd_rand gen(SEED);
 	std::uniform_real_distribution<> dis(0.0, 1.0);
-	for(int i = 0; i < numVertices - 1; i++){
+	for(long i = 0; i < numVertices - 1; i++){
 		generateVertexCoords(dis(gen), dis(gen), radius, x, y);
 		coords.push_back(x);
 		coords.push_back(y);
@@ -43,7 +43,7 @@ int main(int ac, char** av){
 	//std::cerr << "starting triangulation" << std::endl;
 	delaunator::Delaunator d(coords);
 	//std::cerr << "finished triangulation" << std::endl;
-	int numFaces = d.triangles.size() / 3; 
+	long numFaces = d.triangles.size() / 3;
 	
 	//std::cerr << "initializing ply file" << std::endl;
 	std::string ply_fileName = "../random_circle_tesselation_Dirac_delta_"+std::to_string(radius)+"_v"+std::to_string(numVertices)+"_f"+std::to_string(numFaces)+".ply";
@@ -54,9 +54,9 @@ int main(int ac, char** av){
 			<< "comment A synthetic circle, subdivided by triangles, whose vertexes are randomly generated and connected via Delauney Triangulation, with a Dirac delta function applied." << std::endl
 			<< "comment made by Bryan Wolfford" << std::endl
 			<< "element vertex " << numVertices << std::endl
-			<< "property int x" << std::endl
-			<< "property int y" << std::endl
-			<< "property int z" << std::endl
+			<< "property float x" << std::endl
+			<< "property float y" << std::endl
+			<< "property float z" << std::endl
 			<< "property float quality" << std::endl
 			<< "element face " << numFaces << std::endl
 			<< "property list uchar int32 vertex_indices" << std::endl
@@ -67,13 +67,12 @@ int main(int ac, char** av){
 	ply_outfile << "0 0 0 1" << std::endl;
 
 	//std::cerr << "writing vertices" << std::endl;
-	for(int i = 1; i < numVertices; i++){
+	for(long i = 1; i < numVertices; i++){
 		ply_outfile << coords[i*2] << " " << coords[i*2+1] << " 0 0" << std::endl;
 	}
 	//std::cerr << "finished writing vertices" << std::endl;
 	
 	//std::cerr << "writing faces" << std::endl;
-	int a, b, c;
 	for(int i = 0; i < d.triangles.size(); i += 3){
 		//d.triangles saves triplets in CW order... print last first for CCW
 		ply_outfile << "3 " << d.triangles[i+2] << " " << d.triangles[i+1] << " " << d.triangles[i] << std::endl;
