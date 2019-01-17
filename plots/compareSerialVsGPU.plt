@@ -6,7 +6,7 @@ set title "Simple Plots"
 set title  font ",20" norotate
 
 dataDir = "../experiments/"
-data1 = dataDir."Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_gigamesh.txt" 
+data1 = dataDir."Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_MSIIfuncvals_1iter_gigamesh.txt" 
 data2 = dataDir."Unisiegel_UAH_Ebay-Siegel_Uniarchiv_HE2066-60_010614_partial_ASCII_funcvals_1iter_libcudaonering.txt"
 
 #plot '< paste '.data1.' '.data2 u ($2-$4)
