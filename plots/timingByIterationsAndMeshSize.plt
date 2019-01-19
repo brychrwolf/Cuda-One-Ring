@@ -25,20 +25,20 @@ set rmargin mMd
 unset log
 set ylabel "Compute Time (seconds)\nLinear Scale"
 unset xlabel #set xlabel "One-Ring Filter Iterations\nLinear Scale"
-plot for [i=3:12] data every ::0::7  using 2:i with linespoints title columnheader, \
-	 for [i=3:12] data every ::8::15 using 2:i with linespoints title columnheader
+plot for [i=3:12] data every ::0::7  using 2:i with linespoints title "T.".columnhead(i), \
+	 for [i=3:12] data every ::8::15 using 2:i with linespoints title "H.".columnhead(i)
 
 
 
-set key on outside 
+set key on outside title "Proc.Mesh.Size" offset 4
 set lmargin mSm
 set rmargin mLg
 unset log
 set logscale x
 unset ylabel #set ylabel "Compute Time (seconds)\nLinear Scale"
 unset xlabel #set xlabel "One-Ring Filter Iterations\nLog Scale"
-plot for [i=3:12] data every ::0::7  using 2:i with linespoints title columnheader, \
-	 for [i=3:12] data every ::8::15 using 2:i with linespoints title columnheader
+plot for [i=3:12] data every ::0::7  using 2:i with linespoints title "T.".columnhead(i), \
+	 for [i=3:12] data every ::8::15 using 2:i with linespoints title "H.".columnhead(i)
 
 
 
@@ -49,8 +49,8 @@ unset log
 set logscale y
 set ylabel "Compute Time (seconds)\nLog Scale"
 set xlabel "One-Ring Filter Iterations\nLinear Scale"
-plot for [i=3:12] data every ::0::7  using 2:i with linespoints title columnheader, \
-	 for [i=3:12] data every ::8::15 using 2:i with linespoints title columnheader
+plot for [i=3:12] data every ::0::7  using 2:i with linespoints title "T.".columnhead(i), \
+	 for [i=3:12] data every ::8::15 using 2:i with linespoints title "H.".columnhead(i)
 
 
 
@@ -60,8 +60,8 @@ set rmargin mLg
 set logscale xy
 unset ylabel #set ylabel "Compute Time (seconds)\nLog Scale"
 set xlabel "One-Ring Filter Iterations\nLog Scale"
-plot for [i=3:12] data every ::0::7  using 2:i with linespoints title columnheader, \
-	 for [i=3:12] data every ::8::15 using 2:i with linespoints title columnheader
+plot for [i=3:12] data every ::0::7  using 2:i with linespoints title "T.".columnhead(i), \
+	 for [i=3:12] data every ::8::15 using 2:i with linespoints title "H.".columnhead(i)
 	
 
 
