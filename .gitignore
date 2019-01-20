@@ -1,6 +1,10 @@
+#Temporary files
 *.o
 *.a
 *.~*
+.fuse_hidden*
+
+#Compiled Executables
 obj
 lib
 libcudamesh.a
@@ -8,13 +12,9 @@ hexagonal_tessellation_Dirac_delta
 square_tessellation_2tri_Dirac_delta
 square_tessellation_4tri_Dirac_delta
 random_circle_Dirac_delta
-*_Dirac_delta_1_*
-*_Dirac_delta_3_*
-*_Dirac_delta_10_*
-*_Dirac_delta_30_*
-*_Dirac_delta_100_*
-*_Dirac_delta_300_*
-*_Dirac_delta_1000_*
-*_Dirac_delta_3000_*
-.fuse_hidden*
-*.png
+
+#Generated Synthetic Meshses
+synthetic_meshes/*_tessellation_*
+
+#Compiled Plots
+plots/*.png
