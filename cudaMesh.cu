@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include <fstream>
 #include <random>
 #include <set>
@@ -179,6 +180,7 @@ void CudaMesh::loadPLY(std::string fileName){
 	unsigned long q_idx;
 
 	std::ifstream infile(fileName);
+	if(errno != EEXIST) std::cerr << "Error Code: " << std::strerror(errno) << std::endl;
 	
 	// read every line in the file
 	std::string line;
@@ -234,7 +236,7 @@ void CudaMesh::loadPLY(std::string fileName){
 	}
 }
 
-void CudaMesh::loadFunctionValues(std::string fileName){
+/*void CudaMesh::loadFunctionValues(std::string fileName){
 	//TODO: Complain if file doesn't exists
 	//TODO: Complain if file exists but not all functionValues get set
 	if(fileName == ""){
@@ -256,10 +258,11 @@ void CudaMesh::loadFunctionValues(std::string fileName){
 		functionValues[vi] = idsAndValues[1];
 		vi++;
 	}
-}
+}*/
 
 void CudaMesh::writeFunctionValues(std::string fileName){
 	std::ofstream outfile(fileName);
+	if(errno != EEXIST) std::cerr << fileName << std::endl << "Error Code: " << std::strerror(errno) << std::endl;
 	for(unsigned long vi = 0; vi < numVertices; vi++)
 		outfile << vi << " " << oneRingMeanFunctionValues[vi] << std::endl;
 	outfile.close();
@@ -693,6 +696,8 @@ void CudaMesh::analyzeFunctionValues(std::string truthFileName, double tolerence
 	//TODO: use CUDA to speed up
 	//TODO: Complain if file doesn't exists
 	std::ifstream infile(truthFileName);
+	if(errno != EEXIST) std::cerr << truthFileName << std::endl << "Error Code: " << std::strerror(errno) << std::endl;
+
 	std::string line;
 	unsigned long vi = 0;
 	std::map<unsigned long, double> diff;
