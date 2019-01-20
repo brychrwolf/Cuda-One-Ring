@@ -54,29 +54,29 @@ int main(int ac, char** av){
 
 	int numIters;
 	std::string plyFileName;
-	std::string plyDirectory;
+	std::string funcValsFileName;
+	bool isFuncValsExternal = false;
 	if(ac > 1){
 		numIters = std::stoi(av[1]);
 		if(ac > 2){
 			plyFileName = av[2];
 			if(ac > 3){
-				plyDirectory = av[3];
+				isFuncValsExternal = true;
+				funcValsFileName = av[3];
 			}
 		}
 	}else{
 		numIters = 1;
 		plyFileName = "synthetic_meshes/hexagonal_tessellation_Dirac_delta_30_v8557_f16746.ply";
-		//plyFileName = "h.ply";
-		//plyDirectory = "synthetic_meshes";
 	}
 	std::string fileNameBase = plyFileName.substr(0, plyFileName.length()-4);
-	//std::string funcValsFileName = fileNameBase+"_funcvals.txt";
 
 	timer_LoadingMesh.start();
-	//TODO: fail on no load
-	std::cerr << "filename " << plyFileName << std::endl; //plyDirectory+"/"+plyFileName << std::endl;
-	cm.loadPLY(plyFileName);//plyDirectory+"/"+plyFileName);
-	//cm.loadFunctionValues(plyDirectory+"/"+funcValsFileName);
+	//std::cerr << "plyFileName " << plyFileName << std::endl;
+	//std::cerr << "funcValsFileName " << funcValsFileName << std::endl;
+	cm.loadPLY(plyFileName, isFuncValsExternal);
+	if(isFuncValsExternal)
+		cm.loadFunctionValues(funcValsFileName);
 	timer_LoadingMesh.stop();
 
 	//cm.printMesh();
@@ -172,7 +172,7 @@ int main(int ac, char** av){
 	//ca.printMemInfo();
 	ca.printLastCUDAError();
 	cm.writeFunctionValues("experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_libcudaonering.txt");
-	cm.analyzeFunctionValues("experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_gigamesh.txt", 1e-6);
+	cm.analyzeFunctionValues("experiments/"+fileNameBase+"_funcvals_"+std::to_string(numIters)+"iter_gigamesh.txt", 5e-6, true);
 
 	std::cout << std::endl << "Elapsed times:" << std::endl;
 	std::cout << "LoadingMesh\t" 	<< std::fixed << std::setw(10) << std::setprecision(3) << timer_LoadingMesh.getElapsedTime() << std::endl;

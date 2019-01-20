@@ -106,7 +106,7 @@ class CudaMesh{
 		void setOneRingMeanFunctionValues(double* upd);
 		
 		/* IO */
-		void loadPLY(std::string fileName);
+		void loadPLY(std::string fileName, bool isFuncValsExternal);
 		void loadFunctionValues(std::string fileName);
 		void writeFunctionValues(std::string fileName);
 		void printMesh();
@@ -135,7 +135,7 @@ class CudaMesh{
 		void calculateOneRingMeanFunctionValues(int numIters);
 
 		/* Analyze */
-		void analyzeFunctionValues(std::string truthFileName, double tolerence);
+		void analyzeFunctionValues(std::string truthFileName, double tolerence, bool printDiffs);
 };
 
 #endif // CUDAMESH_CUH

@@ -167,12 +167,12 @@ void CudaMesh::setOneRingMeanFunctionValues(double* upd){
 
 
 /* IO */
-void CudaMesh::loadPLY(std::string fileName){
+void CudaMesh::loadPLY(std::string fileName, bool isFuncValsExternal){
 	bool inHeaderSection = true;
 	unsigned long faceSectionBegin;
 	unsigned long vi = 0;
 	unsigned long fi = 0;
-	
+
 	unsigned long v_idx = 0;
 	unsigned long x_idx;
 	unsigned long y_idx;
@@ -180,7 +180,8 @@ void CudaMesh::loadPLY(std::string fileName){
 	unsigned long q_idx;
 
 	std::ifstream infile(fileName);
-	if(errno != EEXIST) std::cerr << "Error Code: " << std::strerror(errno) << std::endl;
+	if(errno != EEXIST) std::cerr << "[loadPLY] Error Code: " << std::strerror(errno) << std::endl;
+	else std::cerr << "File Exists:" << fileName << std::endl;
 	
 	// read every line in the file
 	std::string line;
@@ -215,7 +216,8 @@ void CudaMesh::loadPLY(std::string fileName){
 				inHeaderSection = false;
 				faceSectionBegin = lineNumber + 1 + numVertices;
 				cudaMallocManaged(&vertices, 3 * numVertices * sizeof(double));
-				cudaMallocManaged(&functionValues, numVertices * sizeof(double));
+				if(!isFuncValsExternal)
+					cudaMallocManaged(&functionValues, numVertices * sizeof(double));
 				cudaMallocManaged(&faces, 3 * numFaces * sizeof(unsigned long));
 			}
 		}else if(lineNumber < faceSectionBegin){
@@ -223,7 +225,8 @@ void CudaMesh::loadPLY(std::string fileName){
 			vertices[vi*3 + 0] = coords[x_idx];
 			vertices[vi*3 + 1] = coords[y_idx];
 			vertices[vi*3 + 2] = coords[z_idx];
-			functionValues[vi] = coords[q_idx];
+			if(!isFuncValsExternal)
+				functionValues[vi] = coords[q_idx];
 			vi++;
 		}else{
 			std::vector<unsigned long> coords = split<unsigned long>(line);
@@ -236,9 +239,9 @@ void CudaMesh::loadPLY(std::string fileName){
 	}
 }
 
-/*void CudaMesh::loadFunctionValues(std::string fileName){
-	//TODO: Complain if file doesn't exists
-	//TODO: Complain if file exists but not all functionValues get set
+void CudaMesh::loadFunctionValues(std::string fileName){
+	cudaMallocManaged(&functionValues, numVertices * sizeof(double));
+
 	if(fileName == ""){
 		std::random_device rd;
 		std::mt19937 gen(rd());
@@ -250,6 +253,8 @@ void CudaMesh::loadPLY(std::string fileName){
 	}
 
 	std::ifstream infile(fileName);
+	if(errno != EEXIST) std::cerr << "[loadFunctionValues] Error Code: " << std::strerror(errno) << std::endl;
+	else std::cerr << "File Exists:" << fileName << std::endl;
 	std::string line;
 	unsigned long vi = 0;
 	while(std::getline(infile, line)){
@@ -258,11 +263,11 @@ void CudaMesh::loadPLY(std::string fileName){
 		functionValues[vi] = idsAndValues[1];
 		vi++;
 	}
-}*/
+}
 
 void CudaMesh::writeFunctionValues(std::string fileName){
 	std::ofstream outfile(fileName);
-	if(errno != EEXIST) std::cerr << fileName << std::endl << "Error Code: " << std::strerror(errno) << std::endl;
+	if(errno != EEXIST) std::cerr << fileName << std::endl << "[writeFunctionValues] Error Code: " << std::strerror(errno) << std::endl;
 	for(unsigned long vi = 0; vi < numVertices; vi++)
 		outfile << vi << " " << oneRingMeanFunctionValues[vi] << std::endl;
 	outfile.close();
@@ -692,11 +697,11 @@ double getEdgeLengthOfV0AndVi(unsigned long v0, unsigned long vi, unsigned long*
 
 
 /* Analyze */
-void CudaMesh::analyzeFunctionValues(std::string truthFileName, double tolerence){
+void CudaMesh::analyzeFunctionValues(std::string truthFileName, double tolerence, bool printDiffs){
 	//TODO: use CUDA to speed up
 	//TODO: Complain if file doesn't exists
 	std::ifstream infile(truthFileName);
-	if(errno != EEXIST) std::cerr << truthFileName << std::endl << "Error Code: " << std::strerror(errno) << std::endl;
+	if(errno != EEXIST) std::cerr << truthFileName << std::endl << "[analyzeFunctionValues] Error Code: " << std::strerror(errno) << std::endl;
 
 	std::string line;
 	unsigned long vi = 0;
@@ -712,7 +717,7 @@ void CudaMesh::analyzeFunctionValues(std::string truthFileName, double tolerence
 	}
 	std::cout << vi << " function values compared." << std::endl;
 	std::cout << diff.size() << " differences between calculated and truth values found." << std::endl;
-	if(diff.size() > 0){
+	if(printDiffs && diff.size() > 0){
 		std::cout << "   vertex: calculated - truth = difference" << std::endl;
 		std::map<unsigned long, double>::iterator it;
 		for(it = diff.begin(); it != diff.end(); it++){
