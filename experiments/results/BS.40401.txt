@@ -1,0 +1,598 @@
+[brychrwolf@MSI Cuda One Ring]$ clear
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[brychrwolf@MSI Cuda One Ring]$
+[brychrwolf@MSI Cuda One Ring]$ declare -a mesh=("synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply")
+[brychrwolf@MSI Cuda One Ring]$
+[brychrwolf@MSI Cuda One Ring]$ for (( m=0; m < ${meshCount}; m++ )); do for i in {0..7}; do optirun ./lib ${iter[$i]} ${mesh[$m]}; done; done
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 0.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+1 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_1iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   209.187
+BuildingTables	   194.727
+   BuildingSets		   141.303
+   DetermineRunLengths	     0.752
+   FlattenSets		    15.250
+PreCalculations	    89.036
+   PreCalEdgeLengths	    88.215
+   PreCalMinEdgeLength	     0.805
+Calculating	     2.662
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+3 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_3iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   184.157
+BuildingTables	   194.763
+   BuildingSets		   141.354
+   DetermineRunLengths	     0.749
+   FlattenSets		    15.727
+PreCalculations	    88.688
+   PreCalEdgeLengths	    88.087
+   PreCalMinEdgeLength	     0.590
+Calculating	     4.278
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+10 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_10iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   184.974
+BuildingTables	   196.023
+   BuildingSets		   141.932
+   DetermineRunLengths	     0.774
+   FlattenSets		    15.388
+PreCalculations	    88.705
+   PreCalEdgeLengths	    88.085
+   PreCalMinEdgeLength	     0.605
+Calculating	    11.703
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+30 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_30iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   185.870
+BuildingTables	   195.959
+   BuildingSets		   141.458
+   DetermineRunLengths	     0.746
+   FlattenSets		    15.393
+PreCalculations	    88.794
+   PreCalEdgeLengths	    88.106
+   PreCalMinEdgeLength	     0.675
+Calculating	    33.082
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+100 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_100iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   186.636
+BuildingTables	   195.689
+   BuildingSets		   141.496
+   DetermineRunLengths	     0.809
+   FlattenSets		    15.564
+PreCalculations	    88.698
+   PreCalEdgeLengths	    87.989
+   PreCalMinEdgeLength	     0.696
+Calculating	   107.456
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+300 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_300iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   186.040
+BuildingTables	   195.641
+   BuildingSets		   142.327
+   DetermineRunLengths	     0.767
+   FlattenSets		    15.947
+PreCalculations	    88.805
+   PreCalEdgeLengths	    88.126
+   PreCalMinEdgeLength	     0.668
+Calculating	   301.545
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+1000 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_1000iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   187.998
+BuildingTables	   194.577
+   BuildingSets		   141.502
+   DetermineRunLengths	     0.771
+   FlattenSets		    15.121
+PreCalculations	    88.872
+   PreCalEdgeLengths	    88.181
+   PreCalMinEdgeLength	     0.676
+Calculating	   954.420
+****** Finished Analyzing...
+
+****** Initializing CUDA...
+CUDA Device Query...
+There are 1 CUDA devices.
+
+CUDA Device #0
+	Name:                               GeForce GTX 1050 Ti
+	PCI Bus.Device.Domain Ids:          1.0.0
+	CUDA Capability Major/Minor version:6.1
+	Number of multiprocessors:          6
+	Clock rate (kHz):                   1620000
+	memoryClockRate (kHz):              3504000
+	l2CacheSize (bytes):                1048576
+	sharedMemPerMultiprocessor (bytes): 98304
+	totalConstMem (bytes):              65536
+	managedMemory (T/F):                1
+	warpSize (threads):                 32
+	maxThreadsPerBlock:                 1024
+	maxThreadsPerMultiProcessor:        2048
+	maxThreadsDim[3]:                  [1024, 1024, 64]
+	maxGridSize[3]:                    [2147483647, 65535, 65535]
+
+Minimum Warp Size in system:        32
+Minimum Max Block Size in system:   1024
+****** CUDA Initialized.
+
+****** Loading Mesh...
+File Exists:synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000.ply
+numVertices 40401 numFaces 80000
+****** Finished Loading.
+
+****** Begin Building Tables...
+Building set of faces by vertex,
+and table of adjacent vertices by vertex...
+Determine runlengths of adjacentVertices and facesofVertices
+Iterating over each vertex as v0...
+Flatten adjacentVerticies and facesOfVertices
+Free non-flat sets
+****** Finished Building Tables.
+
+****** Begin Pre-Calculating...
+Precalculate Edge Lengths
+getEdgeLengths<<<235, 1024>>(240800)
+Precalculate minimum edge length among adjacent vertices...
+getMinEdgeLength<<<39, 1024>>(40401)
+globalMinEdgeLength found to be 1.000000
+****** Finished Building Tables.
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+3000 x getOneRingMeanFunctionValues<<<45, 896>>(40401)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_100_v40401_f80000_funcvals_3000iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	   186.479
+BuildingTables	   195.362
+   BuildingSets		   142.037
+   DetermineRunLengths	     0.741
+   FlattenSets		    15.082
+PreCalculations	    88.776
+   PreCalEdgeLengths	    88.122
+   PreCalMinEdgeLength	     0.642
+Calculating	  2796.342
+****** Finished Analyzing...
+[brychrwolf@MSI Cuda One Ring]$
+

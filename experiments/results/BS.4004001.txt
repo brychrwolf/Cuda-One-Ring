@@ -1,0 +1,192 @@
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+1 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_1iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18722.562
+BuildingTables	 18199.408
+   BuildingSets		 13892.290
+   DetermineRunLengths	    69.493
+   FlattenSets		  1500.595
+PreCalculations	819068.875
+   PreCalEdgeLengths	819044.438
+   PreCalMinEdgeLength	    24.452
+Calculating	   154.735
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+3 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_3iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18508.523
+BuildingTables	 18162.760
+   BuildingSets		 13890.882
+   DetermineRunLengths	    70.982
+   FlattenSets		  1484.392
+PreCalculations	821084.625
+   PreCalEdgeLengths	821061.250
+   PreCalMinEdgeLength	    23.382
+Calculating	   316.882
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+10 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_10iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18693.416
+BuildingTables	 18131.449
+   BuildingSets		 13865.770
+   DetermineRunLengths	    65.230
+   FlattenSets		  1488.181
+PreCalculations	826604.812
+   PreCalEdgeLengths	826580.250
+   PreCalMinEdgeLength	    24.511
+Calculating	   913.413
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+30 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_30iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 19378.057
+BuildingTables	 18794.309
+   BuildingSets		 14506.478
+   DetermineRunLengths	    67.708
+   FlattenSets		  1497.006
+PreCalculations	822014.562
+   PreCalEdgeLengths	821990.250
+   PreCalMinEdgeLength	    24.325
+Calculating	  2567.314
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+100 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_100iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18581.988
+BuildingTables	 18179.639
+   BuildingSets		 13902.640
+   DetermineRunLengths	    69.448
+   FlattenSets		  1483.289
+PreCalculations	827723.438
+   PreCalEdgeLengths	827699.375
+   PreCalMinEdgeLength	    24.016
+Calculating	  8390.215
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+300 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_300iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18704.029
+BuildingTables	 18200.123
+   BuildingSets		 13907.193
+   DetermineRunLengths	    70.188
+   FlattenSets		  1486.849
+PreCalculations	826050.188
+   PreCalEdgeLengths	826026.625
+   PreCalMinEdgeLength	    23.544
+Calculating	 25120.627
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+1000 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_1000iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18703.584
+BuildingTables	 18215.906
+   BuildingSets		 13904.223
+   DetermineRunLengths	    69.272
+   FlattenSets		  1496.761
+PreCalculations	825159.875
+   PreCalEdgeLengths	825135.562
+   PreCalMinEdgeLength	    24.345
+Calculating	 82994.570
+****** Finished Analyzing...
+
+****** Begin Calculating...
+Calculating oneRingMeanFunctionValues (circle sectors)...
+3000 x getOneRingMeanFunctionValues<<<4468, 896>>(4004001)
+****** Finished Calculating.
+
+****** Begin Analyzing...
+CUDA ERROR: none
+experiments/synthetic_meshes/square_tessellation_2tri_Dirac_delta_1000_v4004001_f8000000_funcvals_3000iter_gigamesh.txt
+[analyzeFunctionValues] Error Code: No such file or directory
+0 function values compared.
+0 differences between calculated and truth values found.
+
+Elapsed times:
+LoadingMesh	 18691.830
+BuildingTables	 18321.174
+   BuildingSets		 13929.722
+   DetermineRunLengths	    69.460
+   FlattenSets		  1535.071
+PreCalculations	828675.562
+   PreCalEdgeLengths	828651.312
+   PreCalMinEdgeLength	    24.218
+Calculating	248541.469
+****** Finished Analyzing...
+

@@ -628,7 +628,7 @@ void kernel_getOneRingMeanFunctionValues(
 				double mRatioCB = diameterCircum / lenCenterToB;
 				// Circle segment, center of gravity - https://de.wikipedia.org/wiki/Geometrischer_Schwerpunkt#Kreisausschnitt
 				double mCenterOfGravityDist = ( 2.0 * sin( alpha ) ) / ( 3.0 * alpha );
-
+				//TODO:Optimize: eliminating duplicate calc. for each edge by getting all funcVals and do interpolations before loop over facesOfPoint 
 				//ORS.357 Fetch function values
 				double funcValCenter = functionValues[v0];
 				double funcValA = functionValues[vi];
